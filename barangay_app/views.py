@@ -13,7 +13,11 @@ def staff_dashboard(request):
     if profile.is_resident:
         return redirect('resident_dashboard')
 
-    reports = Report.objects.all()
+    if profile.is_official:
+        reports = Report.objects.all()
+    else:
+        reports = Report.objects.filter(assigned_to=request.user)
+
     # Get all staff members for the assignment dropdown
     staff_members = User.objects.filter(profile__role='staff')
 
