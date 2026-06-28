@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barangay Connect — Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy:          '#00236f',
+            'navy-deep':   '#001550',
+            'navy-mid':    '#1a3a8a',
+            lime:          '#b5f23d',
+            sand:          '#f0ebe1',
+            'sand-mid':    '#e8e0d2',
+            ink:           '#0f1117',
+            'ink-muted':   '#6b7280',
+            'ink-light':   '#9ca3af',
+            border:        '#e5e7eb',
+            'border-strong':'#d1d5db',
+          },
+          fontFamily: {
+            sans: ['Poppins', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style type="text/tailwindcss">
+    * { font-family: 'Poppins', system-ui, sans-serif; }
+
+    @layer components {
+      .btn-primary {
+        @apply inline-flex items-center gap-2 rounded-sm bg-navy px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-navy-mid active:scale-95;
+      }
+      .btn-accent {
+        @apply inline-flex items-center gap-2 rounded-sm bg-lime px-4 py-2 text-sm font-semibold text-navy-deep transition-colors hover:bg-[#a3db37] active:scale-95;
+      }
+      .btn-ghost {
+        @apply inline-flex items-center gap-2 rounded-sm border border-border-strong bg-transparent px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-sand active:scale-95;
+      }
+      .form-input {
+        @apply w-full rounded-sm border border-border-strong bg-white px-3.5 py-2.5 text-sm text-ink outline-none transition-all focus:border-navy focus:ring-2 focus:ring-navy/10 placeholder:text-ink-light;
+      }
+      /* Sidebar link — desktop */
+      .sidebar-link {
+        @apply flex items-center gap-3 rounded-sm px-4 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white/90;
+      }
+      .sidebar-link.active {
+        @apply bg-lime font-semibold text-navy-deep;
+      }
+      /* Bottom-nav link — mobile */
+      .nav-pill {
+        @apply flex flex-col items-center gap-0.5 rounded-sm px-3 py-1.5 text-[10px] font-medium text-white/50 transition-colors hover:text-white/80;
+      }
+      .nav-pill.active {
+        @apply text-lime;
+      }
+      .metric-card {
+        @apply flex flex-col rounded-sm border border-border bg-white p-4 md:p-5;
+      }
+      .section-card {
+        @apply rounded-sm border border-border bg-white;
+      }
+      .status-badge {
+        @apply inline-flex items-center gap-1.5 rounded-sm px-2 py-0.5 text-xs font-medium;
+      }
+      .status-pending  { @apply border border-amber-200 bg-amber-50 text-amber-600; }
+      .status-assigned { @apply border border-blue-200 bg-blue-50 text-blue-700; }
+      .status-resolved { @apply border border-green-200 bg-green-50 text-green-700; }
+      .page-eyebrow {
+        @apply mb-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-ink-muted;
+      }
+      .page-title {
+        @apply text-2xl font-bold text-ink;
+      }
+      .section-title {
+        @apply text-base font-semibold text-ink;
+      }
+      .tab-btn {
+        @apply flex items-center gap-1.5 border-b-2 border-transparent px-4 py-3 text-sm font-medium text-ink-muted transition-all hover:text-navy;
+      }
+      .tab-btn.active {
+        @apply border-lime font-semibold text-navy;
+      }
+      .case-id {
+        @apply text-xs font-semibold tracking-wide text-navy;
+      }
+    }
+
+    body { background-color: #fafaf8; color: #0f1117; }
+
+    .bg-grid-pattern {
+      background-image:
+        linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    .bg-line-pattern {
+      background-image: repeating-linear-gradient(45deg, white 0, white 1px, transparent 0, transparent 50%);
+      background-size: 8px 8px;
+    }
+
+    /* Smooth page transitions */
+    .page { animation: fadeIn .18s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body class="flex min-h-screen">
+
+  <!-- ════════════════════════════════════════════
+       SIDEBAR — hidden on mobile, visible on md+
+  ════════════════════════════════════════════ -->
+  <aside id="sidebar" class="fixed bottom-0 left-0 top-0 z-40 flex w-60 flex-col bg-navy-deep text-white
+                              -translate-x-full transition-transform duration-300
+                              md:translate-x-0">
+
+    <!-- Logo strip -->
+    <div class="relative overflow-hidden border-b border-white/10 px-5 pb-5 pt-6">
+      <div class="absolute inset-0 bg-grid-pattern pointer-events-none"></div>
+      <div class="absolute left-0 top-0 h-full w-1 bg-lime"></div>
+      <div class="relative z-10 flex items-center gap-2.5">
+        <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-lime">
+          <i data-lucide="building-2" class="h-3.5 w-3.5 text-navy-deep"></i>
+        </div>
+        <span class="text-sm font-semibold tracking-tight text-white">Barangay Connect</span>
+      </div>
+      <p class="relative z-10 mt-0.5 pl-[36px] text-[11px] text-white/40">Modern Governance</p>
+    </div>
+
+    <!-- Nav links -->
+    <nav class="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-4">
+      <p class="px-4 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-widest text-white/30">Navigation</p>
+      <button onclick="navigate('dashboard')" class="sidebar-link active" data-target="dashboard">
+        <i data-lucide="layout-dashboard" class="h-4 w-4 shrink-0"></i> Dashboard
+      </button>
+      <button onclick="navigate('submit')" class="sidebar-link" data-target="submit">
+        <i data-lucide="file-plus" class="h-4 w-4 shrink-0"></i> Submit Report
+      </button>
+      <button onclick="navigate('tracking')" class="sidebar-link" data-target="tracking">
+        <i data-lucide="search" class="h-4 w-4 shrink-0"></i> Case Tracking
+      </button>
+      <button onclick="navigate('admin')" class="sidebar-link" data-target="admin">
+        <i data-lucide="bar-chart-2" class="h-4 w-4 shrink-0"></i> Reports / Admin
+      </button>
+    </nav>
+
+    <!-- Settings / Logout -->
+    <div class="flex flex-col gap-0.5 border-t border-white/10 px-3 py-3">
+      <button class="sidebar-link">
+        <i data-lucide="settings" class="h-4 w-4 shrink-0"></i> Settings
+      </button>
+      <button onclick="logout()" class="sidebar-link text-red-400/80 hover:bg-red-900/20 hover:text-red-300">
+        <i data-lucide="log-out" class="h-4 w-4 shrink-0"></i> Log out
+      </button>
+    </div>
+
+    <!-- User chip -->
+    <div class="border-t border-white/10 px-5 py-4">
+      <div class="flex items-center gap-3">
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-navy-mid text-xs font-bold text-white">JD</div>
+        <div class="min-w-0">
+          <p class="truncate text-xs font-semibold text-white">Juan Dela Cruz</p>
+          <p class="text-[10px] text-white/40">Resident · District 4</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Sidebar overlay (mobile) -->
+  <div id="sidebar-overlay" class="fixed inset-0 z-30 hidden bg-black/50 md:hidden" onclick="closeSidebar()"></div>
+
+  <!-- ════════════════════════════════════════════
+       MAIN WRAPPER
+  ════════════════════════════════════════════ -->
+  <div class="flex min-h-screen flex-1 flex-col md:ml-60">
+
+    <!-- ── TOP HEADER ── -->
+    <header class="sticky top-0 z-30 flex h-12 items-center gap-3 border-b border-border bg-white px-4 md:px-6">
+      <!-- Hamburger (mobile only) -->
+      <button onclick="openSidebar()" class="rounded-sm p-1.5 text-ink-muted hover:bg-sand md:hidden">
+        <i data-lucide="menu" class="h-5 w-5"></i>
+      </button>
+
+      <!-- Logo text (mobile) -->
+      <span class="text-sm font-bold text-navy md:hidden">Barangay Connect</span>
+
+      <!-- Page title (desktop) -->
+      <span id="header-title" class="hidden font-medium text-xs uppercase tracking-widest text-ink-muted md:block">Dashboard</span>
+
+      <div class="flex-1"></div>
+
+      <!-- Search (tablet+) -->
+      <div class="relative hidden sm:block">
+        <i data-lucide="search" class="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-ink-light"></i>
+        <input type="text" class="form-input h-7 w-40 pl-7 text-xs" placeholder="Search...">
+      </div>
+
+      <!-- Notification bell -->
+      <button class="relative rounded-sm p-1.5 text-ink-muted hover:bg-sand hover:text-ink">
+        <i data-lucide="bell" class="h-4 w-4"></i>
+        <span class="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-red-500"></span>
+      </button>
+
+      <!-- Avatar -->
+      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-navy-mid text-xs font-bold text-white">JD</div>
+    </header>
+
+    <!-- ── PAGE CONTENT ── -->
+    <main class="flex-1 overflow-y-auto bg-[#fafaf8] pb-20 md:pb-6">
+
+      <!-- ─── DASHBOARD ─── -->
+      <div id="page-dashboard" class="page block p-4 md:p-6 lg:p-8 max-w-[1100px]">
+
+        <div class="mb-5 md:mb-7">
+          <p class="page-eyebrow">Overview</p>
+          <h1 class="page-title">Dashboard</h1>
+        </div>
+
+        <!-- Two-col on xl -->
+        <div class="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_300px]">
+
+          <!-- Left -->
+          <div class="space-y-5">
+
+            <!-- Welcome banner -->
+            <div class="relative overflow-hidden rounded-sm border border-border bg-navy-deep p-5 md:p-6 text-white">
+              <div class="absolute inset-0 bg-grid-pattern pointer-events-none"></div>
+              <div class="absolute right-0 top-0 h-full w-32 opacity-[0.06] bg-line-pattern pointer-events-none"></div>
+              <div class="absolute bottom-0 right-0 top-0 w-1 bg-lime"></div>
+              <div class="relative z-10">
+                <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/50">Resident Portal</p>
+                <h2 class="mb-0.5 text-xl font-bold text-white">Good morning, Juan.</h2>
+                <p class="text-sm text-white/60">District 4 · Resident Account</p>
+                <div class="mt-4 flex flex-wrap gap-2">
+                  <button onclick="navigate('submit')" class="btn-accent px-3 py-1.5 text-xs">
+                    Submit a report <i data-lucide="chevron-right" class="h-3 w-3"></i>
+                  </button>
+                  <button onclick="navigate('tracking')" class="btn-ghost border-white/20 px-3 py-1.5 text-xs text-white hover:bg-white/10">
+                    View my cases
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Metrics — 2 cols on mobile, 4 on md+ -->
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div class="metric-card">
+                <div class="flex items-start justify-between">
+                  <span class="text-[11px] font-medium uppercase tracking-wide text-ink-muted leading-tight">Open Cases</span>
+                  <i data-lucide="file-text" class="h-3.5 w-3.5 text-ink-light shrink-0 mt-0.5"></i>
+                </div>
+                <div class="mt-3 text-3xl font-bold text-navy">24</div>
+                <p class="mt-1 flex items-center gap-1 text-xs text-ink-muted">
+                  <i data-lucide="arrow-up-right" class="h-3 w-3 rotate-180"></i> +3 this week
+                </p>
+              </div>
+              <div class="metric-card">
+                <div class="flex items-start justify-between">
+                  <span class="text-[11px] font-medium uppercase tracking-wide text-ink-muted leading-tight">Resolved</span>
+                  <i data-lucide="check-circle" class="h-3.5 w-3.5 text-ink-light shrink-0 mt-0.5"></i>
+                </div>
+                <div class="mt-3 text-3xl font-bold text-navy">8</div>
+                <p class="mt-1 flex items-center gap-1 text-xs text-green-600">
+                  <i data-lucide="arrow-up-right" class="h-3 w-3"></i> Today
+                </p>
+              </div>
+              <div class="metric-card">
+                <div class="flex items-start justify-between">
+                  <span class="text-[11px] font-medium uppercase tracking-wide text-ink-muted leading-tight">Avg. Response</span>
+                  <i data-lucide="clock" class="h-3.5 w-3.5 text-ink-light shrink-0 mt-0.5"></i>
+                </div>
+                <div class="mt-3 text-3xl font-bold text-navy">4.2h</div>
+                <p class="mt-1 text-xs text-ink-muted">No change</p>
+              </div>
+              <div class="metric-card">
+                <div class="flex items-start justify-between">
+                  <span class="text-[11px] font-medium uppercase tracking-wide text-ink-muted leading-tight">Resolution Rate</span>
+                  <i data-lucide="trending-up" class="h-3.5 w-3.5 text-ink-light shrink-0 mt-0.5"></i>
+                </div>
+                <div class="mt-3 text-3xl font-bold text-navy">87.5%</div>
+                <p class="mt-1 flex items-center gap-1 text-xs text-green-600">
+                  <i data-lucide="arrow-up-right" class="h-3 w-3"></i> +2.4%
+                </p>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div>
+              <h3 class="section-title mb-3">Quick actions</h3>
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <button onclick="navigate('submit')" class="group rounded-sm border border-border bg-white p-4 md:p-5 text-left transition-all hover:border-navy hover:bg-sand/40">
+                  <div class="mb-3 flex items-center justify-between">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-navy-deep">
+                      <i data-lucide="file-text" class="h-4 w-4 text-lime"></i>
+                    </div>
+                    <i data-lucide="arrow-up-right" class="h-3.5 w-3.5 text-ink-light group-hover:text-navy transition-colors"></i>
+                  </div>
+                  <h4 class="mb-1 text-sm font-semibold text-ink">File a complaint</h4>
+                  <p class="text-xs leading-relaxed text-ink-muted">Report infrastructure issues, noise, or community concerns.</p>
+                </button>
+                <button onclick="navigate('submit')" class="group rounded-sm border border-border bg-white p-4 md:p-5 text-left transition-all hover:border-red-300 hover:bg-red-50/40">
+                  <div class="mb-3 flex items-center justify-between">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-sm border border-red-200 bg-red-50">
+                      <i data-lucide="triangle-alert" class="h-4 w-4 text-red-600"></i>
+                    </div>
+                    <i data-lucide="arrow-up-right" class="h-3.5 w-3.5 text-ink-light group-hover:text-red-500 transition-colors"></i>
+                  </div>
+                  <h4 class="mb-1 text-sm font-semibold text-ink">Report an incident</h4>
+                  <p class="text-xs leading-relaxed text-ink-muted">Log accidents, suspicious activity, or immediate hazards.</p>
+                </button>
+              </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div>
+              <div class="mb-3 flex items-center justify-between">
+                <h3 class="section-title">Recent activity</h3>
+                <button onclick="navigate('tracking')" class="flex items-center gap-1 text-xs font-medium text-navy hover:underline">
+                  View all <i data-lucide="chevron-right" class="h-3 w-3"></i>
+                </button>
+              </div>
+              <div class="section-card divide-y divide-border">
+                <div class="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-sand/30">
+                  <span class="case-id w-24 shrink-0 hidden sm:block">#BC-892</span>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold text-ink">Streetlight Repair</p>
+                    <p class="text-xs text-ink-muted">Block 4, Rizal St.</p>
+                  </div>
+                  <span class="status-badge status-resolved shrink-0">resolved</span>
+                  <span class="w-10 shrink-0 text-right text-xs text-ink-light hidden sm:block">2d ago</span>
+                </div>
+                <div class="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-sand/30">
+                  <span class="case-id w-24 shrink-0 hidden sm:block">#BC-885</span>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold text-ink">Noise Complaint</p>
+                    <p class="text-xs text-ink-muted">Purok 3, Mabini Ave.</p>
+                  </div>
+                  <span class="status-badge status-assigned shrink-0">assigned</span>
+                  <span class="w-10 shrink-0 text-right text-xs text-ink-light hidden sm:block">5d ago</span>
+                </div>
+                <div class="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-sand/30">
+                  <span class="case-id w-24 shrink-0 hidden sm:block">#BC-881</span>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold text-ink">Clogged Drainage</p>
+                    <p class="text-xs text-ink-muted">Blk 7, Aguinaldo St.</p>
+                  </div>
+                  <span class="status-badge status-pending shrink-0">pending</span>
+                  <span class="w-10 shrink-0 text-right text-xs text-ink-light hidden sm:block">1w ago</span>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /left -->
+
+          <!-- Right: Notices + District -->
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="section-title">Notices</h3>
+              <span class="rounded-sm bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">3 new</span>
+            </div>
+            <div class="cursor-pointer rounded-sm border border-amber-200 bg-amber-50 p-3.5 text-amber-700 transition-opacity hover:opacity-80">
+              <div class="flex items-start gap-2.5">
+                <i data-lucide="triangle-alert" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
+                <div>
+                  <p class="text-sm font-semibold">Water Interruption</p>
+                  <p class="mt-0.5 text-xs leading-relaxed opacity-80">Zone 1–3 maintenance tomorrow, 8 AM–5 PM.</p>
+                  <p class="mt-1.5 text-[10px] opacity-60">Just now</p>
+                </div>
+              </div>
+            </div>
+            <div class="cursor-pointer rounded-sm border border-blue-200 bg-blue-50 p-3.5 text-blue-700 transition-opacity hover:opacity-80">
+              <div class="flex items-start gap-2.5">
+                <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
+                <div>
+                  <p class="text-sm font-semibold">Community Assembly</p>
+                  <p class="mt-0.5 text-xs leading-relaxed opacity-80">Monthly meeting Saturday at Barangay Hall.</p>
+                  <p class="mt-1.5 text-[10px] opacity-60">2 hrs ago</p>
+                </div>
+              </div>
+            </div>
+            <div class="cursor-pointer rounded-sm border border-green-200 bg-green-50 p-3.5 text-green-700 transition-opacity hover:opacity-80">
+              <div class="flex items-start gap-2.5">
+                <i data-lucide="check-circle" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
+                <div>
+                  <p class="text-sm font-semibold">Clearance Approved</p>
+                  <p class="mt-0.5 text-xs leading-relaxed opacity-80">Your Barangay Clearance is ready for pickup.</p>
+                  <p class="mt-1.5 text-[10px] opacity-60">Yesterday</p>
+                </div>
+              </div>
+            </div>
+            <button class="w-full rounded-sm border border-border py-2.5 text-xs font-medium text-ink-muted transition-colors hover:bg-sand">
+              Mark all as read
+            </button>
+
+            <!-- District info -->
+            <div class="rounded-sm border border-border bg-sand p-4">
+              <p class="mb-2 text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Your District</p>
+              <p class="text-sm font-bold text-ink">District 4</p>
+              <p class="mt-0.5 text-xs text-ink-muted">Barangay Cauayan Norte</p>
+              <div class="mt-3 grid grid-cols-2 gap-2 border-t border-sand-mid pt-3 text-xs text-ink-muted">
+                <div>
+                  <span class="block font-semibold text-ink">Kapitan Cruz</span>
+                  Barangay Captain
+                </div>
+                <div>
+                  <span class="block font-semibold text-ink">(078) 652-xxxx</span>
+                  Hotline
+                </div>
+              </div>
+            </div>
+          </div><!-- /right -->
+
+        </div>
+      </div><!-- /page-dashboard -->
+
+      <!-- ─── SUBMIT REPORT ─── -->
+      <div id="page-submit" class="page hidden p-4 md:p-6 lg:p-8 max-w-[780px]">
+        <div class="mb-5 md:mb-7">
+          <p class="page-eyebrow">Forms</p>
+          <h1 class="page-title">Submit a report</h1>
+          <p class="mt-1 text-sm text-ink-muted">Provide details to file a formal complaint or report an incident.</p>
+        </div>
+
+        <div id="toast-success" class="mb-5 hidden flex items-center gap-2 rounded-sm border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">
+          <i data-lucide="check-circle" class="h-4 w-4 shrink-0 text-green-500"></i>
+          Report submitted. You'll receive a case ID via notification.
+        </div>
+
+        <div class="mb-5 flex border-b border-border">
+          <button onclick="switchSubmitTab('complaint')" id="tab-sub-complaint" class="tab-btn active">
+            <i data-lucide="message-square" class="h-3.5 w-3.5"></i>
+            <span class="hidden sm:inline">Complaint</span><span class="sm:hidden">Complaint</span> Form
+          </button>
+          <button onclick="switchSubmitTab('incident')" id="tab-sub-incident" class="tab-btn">
+            <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
+            <span class="hidden sm:inline">Incident</span><span class="sm:hidden">Incident</span> Form
+          </button>
+        </div>
+
+        <div class="section-card p-5 md:p-7">
+
+          <!-- Complaint -->
+          <form id="form-complaint" onsubmit="handleSubmit(event)" class="space-y-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Category</label>
+                <select class="form-input" required>
+                  <option value="">Select category...</option>
+                  <option>Noise Complaint</option>
+                  <option>Property Dispute</option>
+                  <option>Waste Management</option>
+                  <option>Infrastructure</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Title</label>
+                <input type="text" class="form-input" placeholder="Brief summary" required>
+              </div>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Description</label>
+              <textarea class="form-input resize-y" rows="4" placeholder="Detailed information..." required></textarea>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Location</label>
+              <div class="relative">
+                <i data-lucide="map-pin" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+                <input type="text" class="form-input pl-9" placeholder="Street address or landmark" required>
+              </div>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Supporting files</label>
+              <div class="cursor-pointer rounded-sm border-2 border-dashed border-border-strong p-5 text-center hover:border-navy hover:bg-sand/30 transition-all">
+                <i data-lucide="upload" class="mx-auto mb-2 h-5 w-5 text-ink-light"></i>
+                <p class="text-sm text-ink-muted">Drag files here or <span class="font-medium text-navy">browse</span></p>
+                <p class="mt-0.5 text-xs text-ink-light">JPG, PNG, PDF — max 10 MB</p>
+              </div>
+            </div>
+            <div class="flex justify-end pt-1">
+              <button type="submit" class="btn-primary">Submit complaint <i data-lucide="send" class="h-3.5 w-3.5"></i></button>
+            </div>
+          </form>
+
+          <!-- Incident -->
+          <form id="form-incident" onsubmit="handleSubmit(event)" class="hidden space-y-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Incident type</label>
+                <select class="form-input" required>
+                  <option value="">Select type...</option>
+                  <option>Accident</option>
+                  <option>Vandalism</option>
+                  <option>Suspicious Activity</option>
+                  <option>Emergency</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Date & time</label>
+                <div class="relative">
+                  <i data-lucide="calendar" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+                  <input type="datetime-local" class="form-input pl-9" required>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Location</label>
+              <div class="relative">
+                <i data-lucide="map-pin" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+                <input type="text" class="form-input pl-9" placeholder="Street address or landmark" required>
+              </div>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Description</label>
+              <textarea class="form-input resize-y" rows="4" placeholder="Describe what happened..." required></textarea>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Evidence / Photos</label>
+              <div class="cursor-pointer rounded-sm border-2 border-dashed border-border-strong p-5 text-center hover:border-navy hover:bg-sand/30 transition-all">
+                <i data-lucide="upload" class="mx-auto mb-2 h-5 w-5 text-ink-light"></i>
+                <p class="text-sm text-ink-muted">Upload photos or video</p>
+                <p class="mt-0.5 text-xs text-ink-light">JPG, PNG, MP4 — max 50 MB</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-2.5 rounded-sm border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <i data-lucide="triangle-alert" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600"></i>
+              <p>For life-threatening emergencies, call <strong class="font-semibold">911</strong> immediately. This form is for non-urgent reporting only.</p>
+            </div>
+            <div class="flex justify-end pt-1">
+              <button type="submit" class="btn-primary">Submit incident <i data-lucide="send" class="h-3.5 w-3.5"></i></button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+
+      <!-- ─── CASE TRACKING ─── -->
+      <div id="page-tracking" class="page hidden p-4 md:p-6 lg:p-8 max-w-[1100px]">
+        <div class="mb-5 md:mb-7">
+          <p class="page-eyebrow">Management</p>
+          <h1 class="page-title">Case Tracking</h1>
+          <p class="mt-1 text-sm text-ink-muted">Monitor and manage community reports.</p>
+        </div>
+
+        <!-- Stat pills — scroll horizontally on mobile -->
+        <div class="mb-5 grid grid-cols-3 gap-3">
+          <div class="flex flex-col items-start justify-between rounded-sm border border-amber-200 bg-amber-50 p-3.5 sm:flex-row sm:items-center">
+            <span class="text-xs font-medium text-ink-muted">Pending</span>
+            <span class="text-xl font-bold text-amber-600 sm:text-2xl">24</span>
+          </div>
+          <div class="flex flex-col items-start justify-between rounded-sm border border-blue-200 bg-blue-50 p-3.5 sm:flex-row sm:items-center">
+            <span class="text-xs font-medium text-ink-muted leading-tight">Active</span>
+            <span class="text-xl font-bold text-blue-700 sm:text-2xl">15</span>
+          </div>
+          <div class="flex flex-col items-start justify-between rounded-sm border border-green-200 bg-green-50 p-3.5 sm:flex-row sm:items-center">
+            <span class="text-xs font-medium text-ink-muted leading-tight">Resolved Today</span>
+            <span class="text-xl font-bold text-green-700 sm:text-2xl">8</span>
+          </div>
+        </div>
+
+        <!-- Search + filter row -->
+        <div class="mb-4 flex flex-col gap-3 sm:flex-row">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+            <input type="text" class="form-input h-9 pl-9 text-sm" placeholder="Search by ID, reporter, or category...">
+          </div>
+          <div class="flex gap-2">
+            <select class="form-input h-9 w-36 text-sm">
+              <option value="">All statuses</option>
+              <option>Pending</option>
+              <option>Assigned</option>
+              <option>Resolved</option>
+            </select>
+            <button class="btn-ghost h-9 text-xs px-3"><i data-lucide="filter" class="h-3.5 w-3.5"></i><span class="hidden sm:inline"> Filter</span></button>
+          </div>
+        </div>
+
+        <!-- Table — scrollable on mobile -->
+        <div class="section-card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm min-w-[560px]">
+              <thead>
+                <tr class="border-b border-border bg-sand">
+                  <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Case ID</th>
+                  <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Reporter</th>
+                  <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Category</th>
+                  <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted hidden md:table-cell">Filed</th>
+                  <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Status</th>
+                  <th class="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                <tr class="transition-colors hover:bg-sand/30">
+                  <td class="px-4 py-3.5"><span class="case-id">#BC-2023-104</span></td>
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center gap-2">
+                      <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-blue-100 text-[10px] font-bold text-blue-700">JD</div>
+                      <span class="text-sm text-ink">Juan Dela Cruz</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3.5 text-sm text-ink-muted">Streetlight</td>
+                  <td class="px-4 py-3.5 text-xs text-ink-muted hidden md:table-cell">Oct 24, 2023</td>
+                  <td class="px-4 py-3.5"><span class="status-badge status-pending"><span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>pending</span></td>
+                  <td class="px-4 py-3.5 text-right">
+                    <button onclick="openModal('#BC-2023-104','Streetlight Repair','Juan Dela Cruz','Oct 24, 2023')" class="btn-primary px-3 py-1.5 text-xs">Assign</button>
+                  </td>
+                </tr>
+                <tr class="transition-colors hover:bg-sand/30">
+                  <td class="px-4 py-3.5"><span class="case-id">#BC-2023-103</span></td>
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center gap-2">
+                      <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-purple-100 text-[10px] font-bold text-purple-700">MR</div>
+                      <span class="text-sm text-ink">Maria Reyes</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3.5 text-sm text-ink-muted">Waste Collection</td>
+                  <td class="px-4 py-3.5 text-xs text-ink-muted hidden md:table-cell">Oct 23, 2023</td>
+                  <td class="px-4 py-3.5"><span class="status-badge status-assigned"><span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>assigned</span></td>
+                  <td class="px-4 py-3.5 text-right"><button class="btn-ghost px-3 py-1.5 text-xs">Details</button></td>
+                </tr>
+                <tr class="transition-colors hover:bg-sand/30">
+                  <td class="px-4 py-3.5"><span class="case-id">#BC-2023-102</span></td>
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center gap-2">
+                      <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-teal-100 text-[10px] font-bold text-teal-700">PS</div>
+                      <span class="text-sm text-ink">Pedro Santos</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3.5 text-sm text-ink-muted">Noise Complaint</td>
+                  <td class="px-4 py-3.5 text-xs text-ink-muted hidden md:table-cell">Oct 22, 2023</td>
+                  <td class="px-4 py-3.5"><span class="status-badge status-resolved"><span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>resolved</span></td>
+                  <td class="px-4 py-3.5 text-right"><button class="btn-ghost px-3 py-1.5 text-xs">Details</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between border-t border-border bg-white px-4 py-3">
+            <span class="text-xs text-ink-muted">Showing 3 of 5 cases</span>
+            <div class="flex gap-1">
+              <button class="rounded-sm p-1 text-ink-muted opacity-30" disabled><i data-lucide="chevron-left" class="h-4 w-4"></i></button>
+              <button class="rounded-sm bg-navy px-2.5 py-0.5 text-xs font-semibold text-white">1</button>
+              <button class="rounded-sm px-2.5 py-0.5 text-xs text-ink-muted hover:bg-sand">2</button>
+              <button class="rounded-sm p-1 text-ink-muted hover:bg-sand"><i data-lucide="chevron-right" class="h-4 w-4"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── ADMIN REPORTS ─── -->
+      <div id="page-admin" class="page hidden p-4 md:p-6 lg:p-8 max-w-[1100px]">
+        <div class="mb-5 md:mb-7 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p class="page-eyebrow">Analytics</p>
+            <h1 class="page-title">Administrative Reports</h1>
+            <p class="mt-1 text-sm text-ink-muted">Incident volumes and resolution metrics.</p>
+          </div>
+          <button class="btn-ghost shrink-0 self-start text-sm"><i data-lucide="download" class="h-3.5 w-3.5"></i> Export</button>
+        </div>
+
+        <!-- Admin metrics -->
+        <div class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div class="metric-card">
+            <div class="flex items-start justify-between">
+              <span class="text-[11px] font-medium uppercase tracking-wide text-ink-muted leading-tight">Total Reports</span>
+              <i data-lucide="file-text" class="h-3.5 w-3.5 shrink-0 text-ink-light mt-0.5"></i>
+            </div>
+            <div class="mt-3 text-3xl font-bold text-navy">1,248</div>
+            <p class="mt-1 flex items-center gap-1 text-xs text-green-600"><i data-lucide="trending-up" class="h-3 w-3"></i>+12% last month</p>
+          </div>
+          <div class="metric-card">
+            <div class="flex items-start justify-between">
+              <span class="text-[11px] font-medium uppercase tracking-wide text-ink-muted leading-tight">Resolution Rate</span>
+              <i data-lucide="check-circle" class="h-3.5 w-3.5 shrink-0 text-ink-light mt-0.5"></i>
+            </div>
+            <div class="mt-3 text-3xl font-bold text-navy">87.5%</div>
+            <p class="mt-1 flex items-center gap-1 text-xs text-green-600"><i data-lucide="trending-up" class="h-3 w-3"></i>+2.4% last month</p>
+          </div>
+          <div class="metric-card">
+            <div class="flex items-start justify-between">
+              <span class="text-[11px] font-medium uppercase tracking-wide text-ink-muted leading-tight">Pending Cases</span>
+              <i data-lucide="triangle-alert" class="h-3.5 w-3.5 shrink-0 text-ink-light mt-0.5"></i>
+            </div>
+            <div class="mt-3 text-3xl font-bold text-navy">156</div>
+            <p class="mt-1 flex items-center gap-1 text-xs text-red-500"><i data-lucide="trending-down" class="h-3 w-3"></i>-5% last month</p>
+          </div>
+          <div class="metric-card">
+            <div class="flex items-start justify-between">
+              <span class="text-[11px] font-medium uppercase tracking-wide text-ink-muted leading-tight">Avg Response</span>
+              <i data-lucide="clock" class="h-3.5 w-3.5 shrink-0 text-ink-light mt-0.5"></i>
+            </div>
+            <div class="mt-3 text-3xl font-bold text-navy">4.2 hrs</div>
+            <p class="mt-1 flex items-center gap-1 text-xs text-ink-muted"><i data-lucide="minus" class="h-3 w-3"></i>no change</p>
+          </div>
+        </div>
+
+        <!-- Chart + breakdown -->
+        <div class="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px]">
+          <div class="section-card p-5">
+            <h3 class="section-title mb-1">Monthly Report Volume</h3>
+            <p class="mb-4 text-xs text-ink-muted">January – December 2023</p>
+            <svg viewBox="0 0 640 220" class="w-full h-[160px] md:h-[200px]">
+              <line x1="0" y1="0" x2="640" y2="0" stroke="#e5e7eb" stroke-width="1"/>
+              <line x1="0" y1="50" x2="640" y2="50" stroke="#e5e7eb" stroke-width="1"/>
+              <line x1="0" y1="100" x2="640" y2="100" stroke="#e5e7eb" stroke-width="1"/>
+              <line x1="0" y1="150" x2="640" y2="150" stroke="#e5e7eb" stroke-width="1"/>
+              <text x="0" y="15" fill="#9ca3af" font-size="10" font-family="Poppins">170</text>
+              <text x="0" y="65" fill="#9ca3af" font-size="10" font-family="Poppins">113</text>
+              <text x="0" y="115" fill="#9ca3af" font-size="10" font-family="Poppins">57</text>
+              <g><rect x="30"  y="105" width="32" height="95"  fill="#1a3a8a" opacity="0.65" rx="1"/><text x="46"  y="215" fill="#9ca3af" font-size="9" text-anchor="middle" font-family="Poppins">J</text></g>
+              <g><rect x="80"  y="88"  width="32" height="112" fill="#1a3a8a" opacity="0.70" rx="1"/><text x="96"  y="215" fill="#9ca3af" font-size="9" text-anchor="middle" font-family="Poppins">F</text></g>
+              <g><rect x="130" y="115" width="32" height="85"  fill="#1a3a8a" opacity="0.72" rx="1"/><text x="146" y="215" fill="#9ca3af" font-size="9" text-anchor="middle" font-family="Poppins">M</text></g>
+              <g><rect x="180" y="71"  width="32" height="129" fill="#1a3a8a" opacity="0.75" rx="1"/><text x="196" y="215" fill="#9ca3af" font-size="9" text-anchor="middle" font-family="Poppins">A</text></g>
+              <g><rect x="230" y="85"  width="32" height="115" fill="#1a3a8a" opacity="0.78" rx="1"/><text x="246" y="215" fill="#9ca3af" font-size="9" text-anchor="middle" font-family="Poppins">M</text></g>
+              <g><rect x="280" y="47"  width="32" height="153" fill="#1a3a8a" opacity="0.82" rx="1"/><text x="296" y="215" fill="#9ca3af" font-size="9" text-anchor="middle" font-family="Poppins">J</text></g>
+              <g><rect x="330" y="65"  width="32" height="135" fill="#1a3a8a" opacity="0.86" rx="1"/><text x="346" y="215" fill="#9ca3af" font-size="9" text-anchor="middle" font-family="Poppins">J</text></g>
+              <g><rect x="380" y="35"  width="32" height="165" fill="#1a3a8a" opacity="0.90" rx="1"/><text x="396" y="215" fill="#9ca3af" font-size="9" text-anchor="middle" font-family="Poppins">A</text></g>
+              <g><rect x="430" y="53"  width="32" height="147" fill="#1a3a8a" opacity="0.92" rx="1"/><text x="446" y="215" fill="#9ca3af" font-size="9" text-anchor="middle" font-family="Poppins">S</text></g>
+              <g><rect x="480" y="12"  width="32" height="188" fill="#1a3a8a" opacity="0.95" rx="1"/><text x="496" y="215" fill="#9ca3af" font-size="9" text-anchor="middle" font-family="Poppins">O</text></g>
+              <g><rect x="530" y="29"  width="32" height="171" fill="#1a3a8a" opacity="0.97" rx="1"/><text x="546" y="215" fill="#9ca3af" font-size="9" text-anchor="middle" font-family="Poppins">N</text></g>
+              <g><rect x="580" y="0"   width="32" height="200" fill="#b5f23d"             rx="1"/><text x="596" y="215" fill="#9ca3af" font-size="9" text-anchor="middle" font-family="Poppins">D</text></g>
+            </svg>
+            <p class="mt-2 text-[10px] text-ink-light">* Latest month highlighted in lime</p>
+          </div>
+
+          <div class="section-card flex flex-col p-5">
+            <h3 class="section-title mb-4">By Category</h3>
+            <div class="mb-4 flex h-3 gap-px overflow-hidden rounded-sm">
+              <div style="width:42%;background:#00236f"></div>
+              <div style="width:28%;background:#1a3a8a"></div>
+              <div style="width:15%;background:#b5f23d"></div>
+              <div style="width:8%;background:#6b7280"></div>
+              <div style="width:7%;background:#d1d5db"></div>
+            </div>
+            <div class="flex-1 space-y-2.5">
+              <div class="flex items-center gap-3">
+                <div class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background:#00236f"></div>
+                <span class="flex-1 text-xs text-ink">Infrastructure</span>
+                <span class="text-xs font-semibold text-ink">42%</span>
+                <div class="h-1.5 w-16 overflow-hidden rounded-sm bg-border"><div class="h-full rounded-sm" style="width:42%;background:#00236f"></div></div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background:#1a3a8a"></div>
+                <span class="flex-1 text-xs text-ink">Sanitation</span>
+                <span class="text-xs font-semibold text-ink">28%</span>
+                <div class="h-1.5 w-16 overflow-hidden rounded-sm bg-border"><div class="h-full rounded-sm" style="width:28%;background:#1a3a8a"></div></div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background:#b5f23d"></div>
+                <span class="flex-1 text-xs text-ink">Security</span>
+                <span class="text-xs font-semibold text-ink">15%</span>
+                <div class="h-1.5 w-16 overflow-hidden rounded-sm bg-border"><div class="h-full rounded-sm" style="width:15%;background:#b5f23d"></div></div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background:#6b7280"></div>
+                <span class="flex-1 text-xs text-ink">Noise</span>
+                <span class="text-xs font-semibold text-ink">8%</span>
+                <div class="h-1.5 w-16 overflow-hidden rounded-sm bg-border"><div class="h-full rounded-sm" style="width:8%;background:#6b7280"></div></div>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background:#d1d5db"></div>
+                <span class="flex-1 text-xs text-ink">Other</span>
+                <span class="text-xs font-semibold text-ink">7%</span>
+                <div class="h-1.5 w-16 overflow-hidden rounded-sm bg-border"><div class="h-full rounded-sm" style="width:7%;background:#d1d5db"></div></div>
+              </div>
+            </div>
+            <div class="mt-4 border-t border-border pt-4">
+              <p class="text-xs text-ink-muted">Total incidents tracked</p>
+              <p class="mt-0.5 text-2xl font-bold text-navy">1,248</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent admin table -->
+        <div class="section-card overflow-hidden">
+          <div class="flex items-center justify-between border-b border-border px-5 py-4">
+            <h3 class="section-title">Recent Reports</h3>
+            <span class="text-xs text-ink-muted">Last 5 entries</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm min-w-[400px]">
+              <thead>
+                <tr class="border-b border-border bg-sand">
+                  <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Case ID</th>
+                  <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Category</th>
+                  <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted hidden sm:table-cell">Filed</th>
+                  <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                <tr class="cursor-pointer transition-colors hover:bg-sand/30">
+                  <td class="px-5 py-3"><span class="case-id">#BC-2023-104</span></td>
+                  <td class="px-5 py-3 text-sm text-ink">Streetlight Repair</td>
+                  <td class="px-5 py-3 text-xs text-ink-muted hidden sm:table-cell">Oct 24</td>
+                  <td class="px-5 py-3"><span class="status-badge status-pending">pending</span></td>
+                </tr>
+                <tr class="cursor-pointer transition-colors hover:bg-sand/30">
+                  <td class="px-5 py-3"><span class="case-id">#BC-2023-103</span></td>
+                  <td class="px-5 py-3 text-sm text-ink">Waste Collection</td>
+                  <td class="px-5 py-3 text-xs text-ink-muted hidden sm:table-cell">Oct 23</td>
+                  <td class="px-5 py-3"><span class="status-badge status-assigned">assigned</span></td>
+                </tr>
+                <tr class="cursor-pointer transition-colors hover:bg-sand/30">
+                  <td class="px-5 py-3"><span class="case-id">#BC-2023-102</span></td>
+                  <td class="px-5 py-3 text-sm text-ink">Noise Complaint</td>
+                  <td class="px-5 py-3 text-xs text-ink-muted hidden sm:table-cell">Oct 22</td>
+                  <td class="px-5 py-3"><span class="status-badge status-resolved">resolved</span></td>
+                </tr>
+                <tr class="cursor-pointer transition-colors hover:bg-sand/30">
+                  <td class="px-5 py-3"><span class="case-id">#BC-2023-101</span></td>
+                  <td class="px-5 py-3 text-sm text-ink">Road Damage</td>
+                  <td class="px-5 py-3 text-xs text-ink-muted hidden sm:table-cell">Oct 21</td>
+                  <td class="px-5 py-3"><span class="status-badge status-pending">pending</span></td>
+                </tr>
+                <tr class="cursor-pointer transition-colors hover:bg-sand/30">
+                  <td class="px-5 py-3"><span class="case-id">#BC-2023-100</span></td>
+                  <td class="px-5 py-3 text-sm text-ink">Drainage Issue</td>
+                  <td class="px-5 py-3 text-xs text-ink-muted hidden sm:table-cell">Oct 20</td>
+                  <td class="px-5 py-3"><span class="status-badge status-assigned">assigned</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ════════════════════════════════════════════
+         BOTTOM NAV — mobile only (md:hidden)
+    ════════════════════════════════════════════ -->
+    <nav class="fixed bottom-0 left-0 right-0 z-30 flex items-center border-t border-white/10 bg-navy-deep px-2 py-1.5 md:hidden">
+      <button onclick="navigate('dashboard')" data-nav="dashboard" class="nav-pill active flex-1">
+        <i data-lucide="layout-dashboard" class="h-5 w-5"></i>
+        Home
+      </button>
+      <button onclick="navigate('submit')" data-nav="submit" class="nav-pill flex-1">
+        <i data-lucide="file-plus" class="h-5 w-5"></i>
+        Report
+      </button>
+      <button onclick="navigate('tracking')" data-nav="tracking" class="nav-pill flex-1">
+        <i data-lucide="search" class="h-5 w-5"></i>
+        Track
+      </button>
+      <button onclick="navigate('admin')" data-nav="admin" class="nav-pill flex-1">
+        <i data-lucide="bar-chart-2" class="h-5 w-5"></i>
+        Admin
+      </button>
+    </nav>
+
+  </div><!-- /main wrapper -->
+
+  <!-- ════════════════════════════════════════════
+       ASSIGN MODAL
+  ════════════════════════════════════════════ -->
+  <div id="assign-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/40 p-4" onclick="closeModal()">
+    <div class="w-full max-w-md rounded-sm bg-white shadow-2xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b border-border px-5 py-4">
+        <div>
+          <p class="mb-0.5 text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Assignment</p>
+          <h3 class="text-base font-bold text-ink">Assign Personnel</h3>
+        </div>
+        <button onclick="closeModal()" class="rounded-sm p-1 text-ink-muted hover:bg-sand hover:text-ink">
+          <i data-lucide="x" class="h-4 w-4"></i>
+        </button>
+      </div>
+      <div class="space-y-4 p-5">
+        <div class="rounded-sm bg-sand p-3.5">
+          <p class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Case Details</p>
+          <p id="modal-case-title" class="text-sm font-semibold text-ink"></p>
+          <p id="modal-case-sub" class="mt-0.5 text-xs text-ink-muted"></p>
+        </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Assign to</label>
+          <select class="form-input">
+            <option value="">Select personnel or team...</option>
+            <option>Maintenance Team Alpha (Available)</option>
+            <option>Quick Response Team Beta (Available)</option>
+            <option>Engr. Roberto Cruz (Busy)</option>
+          </select>
+        </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted">
+            Instructions <span class="font-normal normal-case tracking-normal text-ink-light">(optional)</span>
+          </label>
+          <textarea class="form-input resize-none" rows="3" placeholder="Add specific instructions..."></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-border bg-sand px-5 py-4">
+        <button onclick="closeModal()" class="btn-ghost px-4 py-2 text-sm">Cancel</button>
+        <button onclick="confirmAssignment(this)" class="btn-primary px-5 py-2 text-sm">
+          Confirm assignment <i data-lucide="send" class="h-3 w-3"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // ── Navigation ──────────────────────────────
+    function navigate(id) {
+      // Sidebar links (desktop)
+      document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
+      const sideBtn = document.querySelector(`.sidebar-link[data-target="${id}"]`);
+      if (sideBtn) sideBtn.classList.add('active');
+
+      // Bottom nav pills (mobile)
+      document.querySelectorAll('.nav-pill').forEach(b => b.classList.remove('active'));
+      const navBtn = document.querySelector(`.nav-pill[data-nav="${id}"]`);
+      if (navBtn) navBtn.classList.add('active');
+
+      // Header title
+      const titles = { dashboard:'Dashboard', submit:'Submit Report', tracking:'Case Tracking', admin:'Reports / Admin' };
+      document.getElementById('header-title').textContent = titles[id] || id;
+
+      // Show/hide pages
+      document.querySelectorAll('.page').forEach(p => { p.classList.add('hidden'); p.classList.remove('block'); });
+      const page = document.getElementById('page-' + id);
+      if (page) { page.classList.remove('hidden'); page.classList.add('block'); }
+
+      // Close mobile sidebar if open
+      closeSidebar();
+    }
+
+    // ── Mobile sidebar ───────────────────────────
+    function openSidebar() {
+      document.getElementById('sidebar').classList.remove('-translate-x-full');
+      document.getElementById('sidebar-overlay').classList.remove('hidden');
+    }
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.add('-translate-x-full');
+      document.getElementById('sidebar-overlay').classList.add('hidden');
+    }
+
+    // ── Submit form tabs ─────────────────────────
+    function switchSubmitTab(tab) {
+      ['complaint','incident'].forEach(t => {
+        document.getElementById('tab-sub-' + t).classList.toggle('active', t === tab);
+        const form = document.getElementById('form-' + t);
+        form.classList.toggle('hidden', t !== tab);
+      });
+    }
+
+    function handleSubmit(e) {
+      e.preventDefault();
+      const toast = document.getElementById('toast-success');
+      toast.classList.remove('hidden');
+      e.target.reset();
+      setTimeout(() => toast.classList.add('hidden'), 3500);
+    }
+
+    // ── Modal ────────────────────────────────────
+    function openModal(id, title, reporter, date) {
+      document.getElementById('modal-case-title').textContent = `${id} — ${title}`;
+      document.getElementById('modal-case-sub').textContent = `Reported by ${reporter} · ${date}`;
+      document.getElementById('assign-modal').classList.remove('hidden');
+    }
+    function closeModal() {
+      document.getElementById('assign-modal').classList.add('hidden');
+    }
+    function confirmAssignment(btn) {
+      const orig = btn.innerHTML;
+      btn.textContent = 'Processing...';
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.textContent = '✓ Assigned';
+        setTimeout(() => {
+          closeModal();
+          btn.innerHTML = orig;
+          btn.disabled = false;
+          lucide.createIcons();
+        }, 1200);
+      }, 800);
+    }
+
+    function logout() {
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>
