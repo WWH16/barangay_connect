@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="min-h-screen bg-[#fafaf8]">
+
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="sidebar fixed bottom-0 left-0 top-0 z-40 flex w-64 flex-col bg-navy-deep text-white">
+    <div class="border-b border-white/10 px-5 pb-6 pt-7">
+      <div class="mb-1 flex items-center gap-2.5">
+        <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-lime">
+          <i data-lucide="building-2" class="h-3.5 w-3.5 text-navy-deep"></i>
+        </div>
+        <span class="text-sm font-semibold tracking-tight text-white">Barangay Connect</span>
+      </div>
+      <p class="pl-[36px] text-xs text-white/40">{% block sidebar_subtitle %}Cauayan City, Isabela{% endblock %}</p>
+    </div>
+
+    <nav class="flex flex-1 flex-col gap-0.5 px-3 py-4">
+      <p class="px-4 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-widest text-white/30">Navigation</p>
+      {% block sidebar_nav %}{% endblock %}
+    </nav>
+
+    <div class="flex flex-col gap-0.5 border-t border-white/10 px-3 py-4">
+      <a href="#" class="sidebar-link">
+        <i data-lucide="settings" class="h-4 w-4"></i> Settings
+      </a>
+      <a href="{% url 'logout' %}" class="sidebar-link text-red-400/80 hover:bg-red-900/20 hover:text-red-300">
+        <i data-lucide="log-out" class="h-4 w-4"></i> Log out
+      </a>
+    </div>
+
+    <div class="border-t border-white/10 px-5 py-4">
+      <div class="flex items-center gap-3">
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-navy-mid font-mono text-xs font-semibold text-white">
+          {{ user.first_name|make_list|first|default:"U" }}{{ user.last_name|make_list|first|default:"" }}
+        </div>
+        <div class="min-w-0">
+          <p class="truncate text-xs font-semibold text-white">{{ user.get_full_name|default:user.username }}</p>
+          <p class="text-[10px] text-white/40">{% block user_role_label %}Resident{% endblock %}</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <div class="ml-64 flex min-h-screen flex-1 flex-col">
+
+    <header class="sticky top-0 z-30 flex h-12 items-center gap-4 border-b border-border bg-white px-6">
+      <span class="font-mono text-xs uppercase tracking-widest text-ink-muted">{% block header_title %}Dashboard{% endblock %}</span>
+      <div class="flex-1"></div>
+      {% block header_actions %}{% endblock %}
+      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-navy-mid font-mono text-xs font-semibold text-white">
+        {{ user.first_name|make_list|first|default:"U" }}{{ user.last_name|make_list|first|default:"" }}
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto bg-[#fafaf8]">
+
+      {% if messages %}
+      <div class="max-w-[1100px] px-8 pt-6 space-y-2">
+        {% for message in messages %}
+        <div class="flex items-center gap-2 rounded-sm border p-4 text-sm
+          {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-700
+          {% elif message.tags == 'success' %}border-green-200 bg-green-50 text-green-700
+          {% else %}border-blue-200 bg-blue-50 text-blue-700{% endif %}">
+          {% if message.tags == 'success' %}<span class="text-green-500">✓</span>{% endif %}
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+  </div>
+</div>
+{% endblock %}

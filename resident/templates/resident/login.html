@@ -1,1087 +1,193 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Barangay Connect</title>
+{% extends "base.html" %}
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500;600&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+{% block title %}Sign In — Barangay Connect{% endblock %}
 
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            navy: '#00236f',
-            'navy-deep': '#001550',
-            'navy-mid': '#1a3a8a',
-            lime: '#b5f23d',
-            'lime-dim': '#d97706',
-            sand: '#f0ebe1',
-            'sand-mid': '#e8e0d2',
-            ink: '#0f1117',
-            'ink-muted': '#6b7280',
-            'ink-light': '#9ca3af',
-            border: '#e5e7eb',
-            'border-strong': '#d1d5db',
-          },
-          fontFamily: {
-            sans: ['Poppins', 'system-ui', 'sans-serif'],
-            serif: ['"DM Serif Display"', 'serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
-          }
-        }
-      }
-    }
-  </script>
-
-  <style type="text/tailwindcss">
-    @layer components {
-      .btn-primary {
-        @apply inline-flex items-center gap-2 rounded-sm bg-navy px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-navy-mid;
-      }
-      .btn-accent {
-        @apply inline-flex items-center gap-2 rounded-sm bg-lime px-5 py-2.5 text-sm font-semibold text-navy-deep transition-colors hover:bg-[#a3db37];
-      }
-      .btn-ghost {
-        @apply inline-flex items-center gap-2 rounded-sm border border-border-strong bg-transparent px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-sand;
-      }
-      .form-input {
-        @apply w-full rounded-sm border border-border-strong bg-white px-3.5 py-2.5 text-sm text-ink outline-none transition-all focus:border-navy focus:ring-2 focus:ring-navy/10 placeholder:text-ink-light;
-      }
-      .form-label {
-        @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted;
-      }
-      .sidebar-link {
-        @apply flex items-center gap-3 rounded-sm px-4 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white/90;
-      }
-      .sidebar-link.active {
-        @apply bg-lime font-semibold text-navy-deep;
-      }
-      .sidebar-link.active i {
-        @apply text-navy-deep;
-      }
-      .metric-card {
-        @apply flex flex-col gap-1 rounded-sm border border-border bg-white p-6;
-      }
-      .section-card {
-        @apply rounded-sm border border-border bg-white;
-      }
-      .tab-btn {
-        @apply flex items-center gap-2 border-b-2 border-transparent px-5 py-3 text-sm font-medium text-ink-muted transition-all hover:text-navy;
-      }
-      .tab-btn.active {
-        @apply border-lime font-semibold text-navy;
-      }
-      .status-badge {
-        @apply inline-flex items-center gap-1.5 rounded-sm px-2 py-0.5 text-xs font-medium;
-      }
-      .status-pending {
-        @apply border border-amber-200 bg-amber-50 text-amber-600;
-      }
-      .status-assigned {
-        @apply border border-blue-200 bg-blue-50 text-blue-700;
-      }
-      .status-resolved {
-        @apply border border-green-200 bg-green-50 text-green-700;
-      }
-      .case-id {
-        @apply font-mono text-xs font-medium tracking-wide text-navy;
-      }
-    }
-
-    body {
-      background-color: #fafaf8; /* white var */
-      color: #0f1117; /* ink var */
-    }
-
-    .bg-grid-pattern {
-      background-image: linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px);
-      background-size: 32px 32px;
-    }
-
-    .bg-line-pattern {
-      background-image: repeating-linear-gradient(45deg, white 0, white 1px, transparent 0, transparent 50%);
-      background-size: 10px 10px;
-    }
-  </style>
-</head>
-<body>
-
-  <div id="view-login" class="flex min-h-screen">
-    <div class="relative hidden w-[44%] flex-col justify-between overflow-hidden bg-navy-deep p-12 lg:flex">
-      <div class="absolute inset-0 opacity-[0.04] bg-grid-pattern"></div>
-      <div class="absolute left-0 top-0 h-full w-1 bg-lime"></div>
-      <div class="relative z-10">
-        <div class="mb-16 flex items-center gap-2.5">
-          <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-lime">
-            <i data-lucide="building-2" class="h-4 w-4 text-navy-deep"></i>
-          </div>
-          <span class="text-sm font-semibold text-white">Barangay Connect</span>
+{% block body %}
+<div id="view-login" class="flex min-h-screen">
+  <!-- Left Panel -->
+  <div class="relative hidden w-[44%] flex-col justify-between overflow-hidden bg-navy-deep p-12 lg:flex">
+    <div class="absolute inset-0 opacity-[0.04] bg-grid-pattern"></div>
+    <div class="absolute left-0 top-0 h-full w-1 bg-lime"></div>
+    <div class="relative z-10">
+      <div class="mb-16 flex items-center gap-2.5">
+        <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-lime">
+          <i data-lucide="building-2" class="h-4 w-4 text-navy-deep"></i>
         </div>
-        <div class="space-y-6">
-          <p class="font-mono text-xs uppercase tracking-[0.15em] text-white/50">PLATFORM v2.0</p>
-          <h1 class="font-serif text-[2.75rem] leading-tight text-white">Governance<br>at your<br>fingertips.</h1>
-          <p class="max-w-xs text-sm leading-relaxed text-white/60">Report issues, track cases, and access barangay services — all in one place. Built for the community.</p>
-        </div>
+        <span class="text-sm font-semibold text-white">Barangay Connect</span>
       </div>
-      <div class="relative z-10 grid grid-cols-3 gap-4 border-t border-white/10 pt-8">
-        <div>
-          <div class="font-serif text-2xl text-white">1,248</div>
-          <div class="mt-0.5 text-xs text-white/40">Reports filed</div>
-        </div>
-        <div>
-          <div class="font-serif text-2xl text-white">87.5%</div>
-          <div class="mt-0.5 text-xs text-white/40">Resolution rate</div>
-        </div>
-        <div>
-          <div class="font-serif text-2xl text-white">4.2h</div>
-          <div class="mt-0.5 text-xs text-white/40">Avg response</div>
-        </div>
+      <div class="space-y-6">
+        <p class="font-mono text-xs uppercase tracking-[0.15em] text-white/50">PLATFORM v2.0</p>
+        <h1 class="font-serif text-[2.75rem] leading-tight text-white">Governance<br>at your<br>fingertips.</h1>
+        <p class="max-w-xs text-sm leading-relaxed text-white/60">Report issues, track cases, and access barangay services — all in one place. Built for the community.</p>
       </div>
     </div>
+    <div class="relative z-10 grid grid-cols-3 gap-4 border-t border-white/10 pt-8">
+      <div>
+        <div class="font-serif text-2xl text-white">1,248</div>
+        <div class="mt-0.5 text-xs text-white/40">Reports filed</div>
+      </div>
+      <div>
+        <div class="font-serif text-2xl text-white">87.5%</div>
+        <div class="mt-0.5 text-xs text-white/40">Resolution rate</div>
+      </div>
+      <div>
+        <div class="font-serif text-2xl text-white">4.2h</div>
+        <div class="mt-0.5 text-xs text-white/40">Avg response</div>
+      </div>
+    </div>
+  </div>
 
-    <div class="flex flex-1 items-center justify-center p-8 lg:p-16">
-      <div class="w-full max-w-md">
-        <div class="mb-10 flex items-center gap-2 lg:hidden">
-          <div class="flex h-7 w-7 items-center justify-center rounded-sm bg-navy">
-            <i data-lucide="building-2" class="h-3.5 w-3.5 text-white"></i>
+  <!-- Right Panel — Forms -->
+  <div class="flex flex-1 items-center justify-center p-8 lg:p-16">
+    <div class="w-full max-w-md">
+      <div class="mb-10 flex items-center gap-2 lg:hidden">
+        <div class="flex h-7 w-7 items-center justify-center rounded-sm bg-navy">
+          <i data-lucide="building-2" class="h-3.5 w-3.5 text-white"></i>
+        </div>
+        <span class="text-sm font-semibold text-navy">Barangay Connect</span>
+      </div>
+
+      <div class="mb-8">
+        <p id="login-subtitle" class="mb-2 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">RESIDENT PORTAL</p>
+        <h2 id="login-title" class="font-serif text-3xl text-ink">Welcome back.</h2>
+      </div>
+
+      {% if messages %}
+      <div class="mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="rounded-sm border p-3 text-sm font-medium
+          {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-700
+          {% elif message.tags == 'success' %}border-green-200 bg-green-50 text-green-700
+          {% else %}border-blue-200 bg-blue-50 text-blue-700{% endif %}">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="mb-8 flex gap-0 border-b border-border">
+        <button onclick="switchLoginTab('login')" id="tab-login" class="tab-btn active w-1/2 justify-center">Log in</button>
+        <button onclick="switchLoginTab('register')" id="tab-register" class="tab-btn w-1/2 justify-center">Register</button>
+      </div>
+
+      <!-- ===== LOGIN FORM ===== -->
+      <form id="form-login" method="POST" action="{% url 'login' %}" class="space-y-5">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="login">
+        <div>
+          <label class="form-label">Email</label>
+          <div class="relative">
+            <i data-lucide="mail" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+            <input type="email" name="email" class="form-input pl-9" placeholder="juan@example.com" required>
           </div>
-          <span class="text-sm font-semibold text-navy">Barangay Connect</span>
         </div>
-
-        <div class="mb-8">
-          <p id="login-subtitle" class="mb-2 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">RESIDENT PORTAL</p>
-          <h2 id="login-title" class="font-serif text-3xl text-ink">Welcome back.</h2>
+        <div>
+          <label class="form-label">Password</label>
+          <div class="relative">
+            <i data-lucide="lock" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+            <input type="password" name="password" id="login-pwd" class="form-input pl-9 pr-10" placeholder="••••••••" required>
+            <button type="button" onclick="togglePassword('login-pwd', 'login-pwd-icon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-light transition-colors hover:text-ink">
+              <i data-lucide="eye" id="login-pwd-icon" class="h-3.5 w-3.5"></i>
+            </button>
+          </div>
+          <div class="mt-2 flex justify-between">
+            <label class="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
+              <input type="checkbox" class="rounded-sm"> Remember me
+            </label>
+            <button type="button" class="text-xs text-navy hover:underline">Forgot password?</button>
+          </div>
         </div>
+        <button type="submit" class="btn-primary mt-2 w-full justify-center">
+          Continue <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+        </button>
+        <p class="text-center text-xs text-ink-muted">
+          Don't have an account? <button type="button" onclick="switchLoginTab('register')" class="font-medium text-navy hover:underline">Register here</button>
+        </p>
+      </form>
 
-        <div class="mb-8 flex gap-0 border-b border-border">
-          <button onclick="switchLoginTab('login')" id="tab-login" class="tab-btn active w-1/2 justify-center">Log in</button>
-          <button onclick="switchLoginTab('register')" id="tab-register" class="tab-btn w-1/2 justify-center">Register</button>
-        </div>
-
-        <form id="form-login" onsubmit="handleAuth(event)" class="space-y-5">
+      <!-- ===== REGISTER FORM ===== -->
+      <form id="form-register" method="POST" action="{% url 'login' %}" class="hidden space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="register">
+        
+        <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="form-label">Username</label>
+            <label class="form-label">First name</label>
             <div class="relative">
               <i data-lucide="user" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
-              <input type="text" class="form-input pl-9" placeholder="juan.delacruz" value="juan.delacruz" required>
+              <input type="text" name="first_name" class="form-input pl-9" placeholder="Juan" required>
             </div>
           </div>
+          <div>
+            <label class="form-label">Last name</label>
+            <div class="relative">
+              <i data-lucide="user" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+              <input type="text" name="last_name" class="form-input pl-9" placeholder="Dela Cruz" required>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Email</label>
+          <div class="relative">
+            <i data-lucide="mail" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+            <input type="email" name="email" class="form-input pl-9" placeholder="juan@example.com" required>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Contact Number</label>
+          <div class="relative">
+            <i data-lucide="phone" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+            <input type="text" name="contact_number" class="form-input pl-9" placeholder="09171234567" required>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="form-label">Password</label>
             <div class="relative">
               <i data-lucide="lock" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
-              <input type="password" id="login-pwd" class="form-input pl-9 pr-10" placeholder="••••••••" value="password123" required>
-              <button type="button" onclick="togglePassword('login-pwd', 'login-pwd-icon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-light transition-colors hover:text-ink">
-                <i data-lucide="eye" id="login-pwd-icon" class="h-3.5 w-3.5"></i>
-              </button>
-            </div>
-            <div class="mt-2 flex justify-between">
-              <label class="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
-                <input type="checkbox" class="rounded-sm"> Remember me
-              </label>
-              <button type="button" class="text-xs text-navy hover:underline">Forgot password?</button>
-            </div>
-          </div>
-          <button type="submit" class="btn-primary mt-2 w-full justify-center">
-            Continue <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
-          </button>
-          <p class="text-center text-xs text-ink-muted">
-            Don't have an account? <button type="button" onclick="switchLoginTab('register')" class="font-medium text-navy hover:underline">Register here</button>
-          </p>
-        </form>
-
-        <form id="form-register" onsubmit="handleAuth(event)" class="hidden space-y-5">
-          <div>
-            <label class="form-label">Role</label>
-            <select class="form-input" required>
-              <option value="">Select role...</option>
-              <option value="resident">Resident</option>
-              <option value="staff">Barangay Staff</option>
-              <option value="official">Official</option>
-            </select>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="form-label">Full name</label>
-              <input type="text" class="form-input" placeholder="Juan Dela Cruz" required>
-            </div>
-            <div>
-              <label class="form-label">Contact</label>
-              <input type="text" class="form-input" placeholder="09xx or email" required>
+              <input type="password" name="password" id="reg-pwd" class="form-input pl-9" placeholder="••••••••" required>
             </div>
           </div>
           <div>
-            <label class="form-label">Address</label>
-            <input type="text" class="form-input" placeholder="House No., Street, Purok" required>
-          </div>
-          <div class="border-t border-border pt-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="form-label">Username</label>
-                <input type="text" class="form-input" placeholder="username" required>
-              </div>
-              <div>
-                <label class="form-label">Password</label>
-                <input type="password" class="form-input" placeholder="••••••••" required>
-              </div>
+            <label class="form-label">Confirm Password</label>
+            <div class="relative">
+              <i data-lucide="lock" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+              <input type="password" name="confirm_password" id="reg-pwd-confirm" class="form-input pl-9" placeholder="••••••••" required>
             </div>
           </div>
-          <button type="submit" class="btn-primary mt-2 w-full justify-center">
-            Create account <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
-          </button>
-          <p class="text-center text-xs text-ink-muted">
-            By registering, you agree to our <button type="button" class="text-navy hover:underline">Terms</button> and <button type="button" class="text-navy hover:underline">Privacy Policy</button>.
-          </p>
-        </form>
-      </div>
+        </div>
+
+        <button type="submit" class="btn-primary mt-2 w-full justify-center">
+          Create account <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+        </button>
+        <p class="text-center text-[11px] text-ink-muted leading-relaxed">
+          You'll be registered as a <span class="font-semibold text-navy">Resident</span>. By registering, you agree to our <button type="button" class="text-navy hover:underline">Terms</button> and <button type="button" class="text-navy hover:underline">Privacy Policy</button>.
+        </p>
+      </form>
     </div>
   </div>
+</div>
+{% endblock %}
 
-  <div id="view-app" class="hidden min-h-screen bg-[#fafaf8]">
-
-    <aside class="sidebar fixed bottom-0 left-0 top-0 z-40 flex w-64 flex-col bg-navy-deep text-white">
-      <div class="border-b border-white/10 px-5 pb-6 pt-7">
-        <div class="mb-1 flex items-center gap-2.5">
-          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-lime">
-            <i data-lucide="building-2" class="h-3.5 w-3.5 text-navy-deep"></i>
-          </div>
-          <span class="text-sm font-semibold tracking-tight text-white">Barangay Connect</span>
-        </div>
-        <p class="pl-[36px] text-xs text-white/40">Cauayan City, Isabela</p>
-      </div>
-
-      <nav class="flex flex-1 flex-col gap-0.5 px-3 py-4">
-        <p class="px-4 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-widest text-white/30">Navigation</p>
-        <button onclick="navigate('dashboard')" class="sidebar-link active" data-target="dashboard">
-          <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Dashboard
-        </button>
-        <button onclick="navigate('submit')" class="sidebar-link" data-target="submit">
-          <i data-lucide="file-plus" class="h-4 w-4"></i> Submit Report
-        </button>
-        <button onclick="navigate('tracking')" class="sidebar-link" data-target="tracking">
-          <i data-lucide="search" class="h-4 w-4"></i> Case Tracking
-        </button>
-        <button onclick="navigate('admin')" class="sidebar-link" data-target="admin">
-          <i data-lucide="bar-chart-2" class="h-4 w-4"></i> Reports / Admin
-        </button>
-      </nav>
-
-      <div class="flex flex-col gap-0.5 border-t border-white/10 px-3 py-4">
-        <button class="sidebar-link">
-          <i data-lucide="settings" class="h-4 w-4"></i> Settings
-        </button>
-        <button onclick="logout()" class="sidebar-link text-red-400/80 hover:bg-red-900/20 hover:text-red-300">
-          <i data-lucide="log-out" class="h-4 w-4"></i> Log out
-        </button>
-      </div>
-
-      <div class="border-t border-white/10 px-5 py-4">
-        <div class="flex items-center gap-3">
-          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-navy-mid font-mono text-xs font-semibold text-white">JD</div>
-          <div class="min-w-0">
-            <p class="truncate text-xs font-semibold text-white">Juan Dela Cruz</p>
-            <p class="text-[10px] text-white/40">Resident · District 4</p>
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <div class="ml-64 flex min-h-screen flex-1 flex-col">
-
-      <header class="sticky top-0 z-30 flex h-12 items-center gap-4 border-b border-border bg-white px-6">
-        <span id="header-title" class="font-mono text-xs uppercase tracking-widest text-ink-muted">Dashboard</span>
-        <div class="flex-1"></div>
-        <div class="relative hidden sm:block">
-          <i data-lucide="search" class="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-ink-light"></i>
-          <input type="text" class="form-input h-7 w-48 pl-7 text-xs" placeholder="Search...">
-        </div>
-        <button class="relative rounded-sm p-1.5 text-ink-muted transition-colors hover:bg-sand hover:text-ink">
-          <i data-lucide="bell" class="h-4 w-4"></i>
-          <span class="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-red-500"></span>
-        </button>
-        <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-navy-mid font-mono text-xs font-semibold text-white">JD</div>
-      </header>
-
-      <main class="flex-1 overflow-y-auto bg-[#fafaf8]">
-
-        <div id="page-dashboard" class="page block max-w-[1100px] p-8">
-          <div class="mb-8">
-            <p class="mb-1.5 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">OVERVIEW</p>
-            <h1 class="font-serif text-3xl text-ink">Dashboard</h1>
-          </div>
-
-          <div class="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
-            <div class="space-y-6">
-              <div class="relative overflow-hidden rounded-sm border border-border bg-navy-deep p-6 text-white">
-                <div class="absolute right-0 top-0 h-full w-40 opacity-[0.06] bg-line-pattern"></div>
-                <div class="absolute bottom-0 right-0 top-0 w-1 bg-lime"></div>
-                <p class="mb-2 font-mono text-xs uppercase tracking-widest text-white/50">RESIDENT PORTAL</p>
-                <h2 class="mb-1 font-serif text-2xl text-white">Good morning, Juan.</h2>
-                <p class="text-sm text-white/60">District 4 · Last login 2 hours ago</p>
-                <div class="mt-5 flex gap-3">
-                  <button onclick="navigate('submit')" class="btn-accent px-4 py-2 text-xs">
-                    Submit a report <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
-                  </button>
-                  <button onclick="navigate('tracking')" class="btn-ghost border-white/20 px-4 py-2 text-xs text-white hover:bg-white/10">
-                    View my cases
-                  </button>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <div class="metric-card">
-                  <div class="flex items-start justify-between">
-                    <span class="text-xs font-medium uppercase tracking-wide text-ink-muted">Open Cases</span>
-                    <i data-lucide="file-text" class="mt-0.5 h-3.5 w-3.5 text-ink-light"></i>
-                  </div>
-                  <div class="mt-2 font-serif text-3xl text-navy">24</div>
-                  <p class="mt-1 flex items-center gap-1 text-xs text-ink-muted">
-                    <i data-lucide="arrow-up-right" class="h-3 w-3 rotate-180"></i> +3 this week
-                  </p>
-                </div>
-                <div class="metric-card">
-                  <div class="flex items-start justify-between">
-                    <span class="text-xs font-medium uppercase tracking-wide text-ink-muted">Resolved</span>
-                    <i data-lucide="check-circle" class="mt-0.5 h-3.5 w-3.5 text-ink-light"></i>
-                  </div>
-                  <div class="mt-2 font-serif text-3xl text-navy">8</div>
-                  <p class="mt-1 flex items-center gap-1 text-xs text-green-600">
-                    <i data-lucide="arrow-up-right" class="h-3 w-3"></i> Today
-                  </p>
-                </div>
-                <div class="metric-card">
-                  <div class="flex items-start justify-between">
-                    <span class="text-xs font-medium uppercase tracking-wide text-ink-muted">Avg. Response</span>
-                    <i data-lucide="clock" class="mt-0.5 h-3.5 w-3.5 text-ink-light"></i>
-                  </div>
-                  <div class="mt-2 font-serif text-3xl text-navy">4.2h</div>
-                  <p class="mt-1 flex items-center gap-1 text-xs text-ink-muted">No change</p>
-                </div>
-                <div class="metric-card">
-                  <div class="flex items-start justify-between">
-                    <span class="text-xs font-medium uppercase tracking-wide text-ink-muted">Resolution Rate</span>
-                    <i data-lucide="trending-up" class="mt-0.5 h-3.5 w-3.5 text-ink-light"></i>
-                  </div>
-                  <div class="mt-2 font-serif text-3xl text-navy">87.5%</div>
-                  <p class="mt-1 flex items-center gap-1 text-xs text-green-600">
-                    <i data-lucide="arrow-up-right" class="h-3 w-3"></i> +2.4% vs last mo.
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <h3 class="mb-3 font-serif text-lg text-ink">Quick actions</h3>
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <button onclick="navigate('submit')" class="group rounded-sm border border-border bg-white p-5 text-left transition-all hover:border-navy hover:bg-sand/40">
-                    <div class="mb-3 flex items-center justify-between">
-                      <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-navy-deep">
-                        <i data-lucide="file-text" class="h-4 w-4 text-lime"></i>
-                      </div>
-                      <i data-lucide="arrow-up-right" class="h-3.5 w-3.5 text-ink-light transition-colors group-hover:text-navy"></i>
-                    </div>
-                    <h4 class="mb-1 text-sm font-semibold text-ink">File a complaint</h4>
-                    <p class="leading-relaxed text-xs text-ink-muted">Report infrastructure issues, noise, or community concerns.</p>
-                  </button>
-                  <button onclick="navigate('submit'); switchSubmitTab('incident');" class="group rounded-sm border border-border bg-white p-5 text-left transition-all hover:border-red-300 hover:bg-red-50/40">
-                    <div class="mb-3 flex items-center justify-between">
-                      <div class="flex h-9 w-9 items-center justify-center rounded-sm border border-red-200 bg-red-50">
-                        <i data-lucide="triangle-alert" class="h-4 w-4 text-red-600"></i>
-                      </div>
-                      <i data-lucide="arrow-up-right" class="h-3.5 w-3.5 text-ink-light transition-colors group-hover:text-red-500"></i>
-                    </div>
-                    <h4 class="mb-1 text-sm font-semibold text-ink">Report an incident</h4>
-                    <p class="leading-relaxed text-xs text-ink-muted">Log accidents, suspicious activity, or immediate hazards.</p>
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <div class="mb-3 flex items-center justify-between">
-                  <h3 class="font-serif text-lg text-ink">Recent activity</h3>
-                  <button onclick="navigate('tracking')" class="flex items-center gap-1 text-xs text-navy hover:underline">View all <i data-lucide="chevron-right" class="h-3 w-3"></i></button>
-                </div>
-                <div class="section-card divide-y divide-border">
-                  <div class="flex cursor-pointer items-center gap-4 px-4 py-3 transition-colors hover:bg-sand/30">
-                    <span class="case-id w-24 shrink-0">#BC-892</span>
-                    <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-medium text-ink">Streetlight Repair</p>
-                      <p class="text-xs text-ink-muted">Block 4, Rizal St.</p>
-                    </div>
-                    <span class="status-badge status-resolved">resolved</span>
-                    <span class="w-12 shrink-0 text-right text-xs text-ink-light">2d ago</span>
-                  </div>
-                  <div class="flex cursor-pointer items-center gap-4 px-4 py-3 transition-colors hover:bg-sand/30">
-                    <span class="case-id w-24 shrink-0">#BC-885</span>
-                    <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-medium text-ink">Noise Complaint</p>
-                      <p class="text-xs text-ink-muted">Purok 3, Mabini Ave.</p>
-                    </div>
-                    <span class="status-badge status-assigned">assigned</span>
-                    <span class="w-12 shrink-0 text-right text-xs text-ink-light">5d ago</span>
-                  </div>
-                  <div class="flex cursor-pointer items-center gap-4 px-4 py-3 transition-colors hover:bg-sand/30">
-                    <span class="case-id w-24 shrink-0">#BC-881</span>
-                    <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-medium text-ink">Clogged Drainage</p>
-                      <p class="text-xs text-ink-muted">Blk 7, Aguinaldo St.</p>
-                    </div>
-                    <span class="status-badge status-pending">pending</span>
-                    <span class="w-12 shrink-0 text-right text-xs text-ink-light">1w ago</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div class="mb-3 flex items-center justify-between">
-                <h3 class="font-serif text-lg text-ink">Notices</h3>
-                <span class="rounded-sm bg-red-100 px-2 py-0.5 font-mono text-xs text-red-700">3 new</span>
-              </div>
-              <div class="space-y-2">
-                <div class="cursor-pointer rounded-sm border border-amber-200 bg-amber-50 p-3.5 text-amber-700 transition-opacity hover:opacity-90">
-                  <div class="flex items-start gap-2.5">
-                    <i data-lucide="triangle-alert" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
-                    <div class="min-w-0">
-                      <p class="leading-tight text-sm font-semibold">Water Interruption</p>
-                      <p class="leading-relaxed mt-0.5 text-xs opacity-80">Zone 1–3 maintenance tomorrow, 8 AM–5 PM.</p>
-                      <p class="mt-1.5 font-mono text-[10px] opacity-60">Just now</p>
-                    </div>
-                  </div>
-                </div>
-                <div class="cursor-pointer rounded-sm border border-blue-200 bg-blue-50 p-3.5 text-blue-700 transition-opacity hover:opacity-90">
-                  <div class="flex items-start gap-2.5">
-                    <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
-                    <div class="min-w-0">
-                      <p class="leading-tight text-sm font-semibold">Community Assembly</p>
-                      <p class="leading-relaxed mt-0.5 text-xs opacity-80">Monthly meeting Saturday at Barangay Hall.</p>
-                      <p class="mt-1.5 font-mono text-[10px] opacity-60">2 hrs ago</p>
-                    </div>
-                  </div>
-                </div>
-                <div class="cursor-pointer rounded-sm border border-green-200 bg-green-50 p-3.5 text-green-700 transition-opacity hover:opacity-90">
-                  <div class="flex items-start gap-2.5">
-                    <i data-lucide="check-circle" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
-                    <div class="min-w-0">
-                      <p class="leading-tight text-sm font-semibold">Clearance Approved</p>
-                      <p class="leading-relaxed mt-0.5 text-xs opacity-80">Your Barangay Clearance is ready for pickup.</p>
-                      <p class="mt-1.5 font-mono text-[10px] opacity-60">Yesterday</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <button class="mt-3 w-full rounded-sm border border-border py-2.5 text-xs font-medium text-ink-muted transition-colors hover:bg-sand">Mark all as read</button>
-
-              <div class="mt-5 rounded-sm border border-border bg-sand p-4">
-                <p class="mb-2 font-mono text-xs uppercase tracking-widest text-ink-muted">YOUR DISTRICT</p>
-                <p class="text-sm font-semibold text-ink">District 4</p>
-                <p class="mt-0.5 text-xs text-ink-muted">Barangay Cauayan Norte</p>
-                <div class="mt-3 grid grid-cols-2 gap-2 border-t border-sand-mid pt-3 text-xs text-ink-muted">
-                  <div>
-                    <span class="block font-semibold text-ink">Kapitan Cruz</span> Barangay Captain
-                  </div>
-                  <div>
-                    <span class="block font-semibold text-ink">(078) 652-xxxx</span> Hotline
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="page-submit" class="page hidden max-w-[780px] p-8">
-          <div class="mb-8">
-            <p class="mb-1.5 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">FORMS</p>
-            <h1 class="font-serif text-3xl text-ink">Submit a report</h1>
-            <p class="mt-1 text-sm text-ink-muted">Provide details below to file a formal complaint or report an incident.</p>
-          </div>
-
-          <div id="toast-success" class="hidden mb-6 flex items-center gap-2 rounded-sm border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-            <span class="text-green-500">✓</span> Report submitted successfully. You will receive a case ID via notification.
-          </div>
-
-          <div class="mb-8 flex border-b border-border">
-            <button onclick="switchSubmitTab('complaint')" id="tab-sub-complaint" class="tab-btn active">
-              <i data-lucide="message-square" class="h-3.5 w-3.5"></i> Complaint Form
-            </button>
-            <button onclick="switchSubmitTab('incident')" id="tab-sub-incident" class="tab-btn">
-              <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i> Incident Form
-            </button>
-          </div>
-
-          <div class="section-card">
-            <div class="p-6 md:p-8">
-
-              <form id="form-complaint" onsubmit="handleFormSubmit(event)" class="space-y-5">
-                <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label class="form-label">Category</label>
-                    <select class="form-input" required>
-                      <option value="">Select category...</option>
-                      <option>Noise Complaint</option>
-                      <option>Property Dispute</option>
-                      <option>Waste Management</option>
-                      <option>Infrastructure</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="form-label">Title</label>
-                    <input type="text" class="form-input" placeholder="Brief summary of complaint" required>
-                  </div>
-                </div>
-                <div>
-                  <label class="form-label">Description</label>
-                  <textarea class="form-input resize-y" rows="4" placeholder="Provide detailed information about the complaint..." required></textarea>
-                </div>
-                <div>
-                  <label class="form-label">Location</label>
-                  <div class="relative">
-                    <i data-lucide="map-pin" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
-                    <input type="text" class="form-input pl-9" placeholder="Street address or nearest landmark" required>
-                  </div>
-                </div>
-                <div>
-                  <label class="form-label">Supporting files</label>
-                  <div class="cursor-pointer rounded-sm border-2 border-dashed border-border-strong p-6 text-center transition-all hover:border-navy hover:bg-sand/30">
-                    <i data-lucide="upload" class="mx-auto mb-2 h-5 w-5 text-ink-light"></i>
-                    <p class="text-sm text-ink-muted">Drag files here, or <span class="font-medium text-navy">browse</span></p>
-                    <p class="mt-1 text-xs text-ink-light">JPG, PNG, PDF — max 10 MB each</p>
-                  </div>
-                </div>
-                <div class="flex justify-end pt-2">
-                  <button type="submit" class="btn-primary">Submit complaint <i data-lucide="send" class="h-3.5 w-3.5"></i></button>
-                </div>
-              </form>
-
-              <form id="form-incident" onsubmit="handleFormSubmit(event)" class="hidden space-y-5">
-                <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div>
-                    <label class="form-label">Incident type</label>
-                    <select class="form-input" required>
-                      <option value="">Select type...</option>
-                      <option>Accident</option>
-                      <option>Vandalism</option>
-                      <option>Suspicious Activity</option>
-                      <option>Emergency</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="form-label">Date & time of incident</label>
-                    <div class="relative">
-                      <i data-lucide="calendar" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
-                      <input type="datetime-local" class="form-input pl-9" required>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <label class="form-label">Location</label>
-                  <div class="relative">
-                    <i data-lucide="map-pin" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
-                    <input type="text" class="form-input pl-9" placeholder="Street address or nearest landmark" required>
-                  </div>
-                </div>
-                <div>
-                  <label class="form-label">Description</label>
-                  <textarea class="form-input resize-y" rows="4" placeholder="Describe what happened in detail..." required></textarea>
-                </div>
-                <div>
-                  <label class="form-label">Evidence / Photos</label>
-                  <div class="cursor-pointer rounded-sm border-2 border-dashed border-border-strong p-6 text-center transition-all hover:border-navy hover:bg-sand/30">
-                    <i data-lucide="upload" class="mx-auto mb-2 h-5 w-5 text-ink-light"></i>
-                    <p class="text-sm text-ink-muted">Upload photos or video of the incident</p>
-                    <p class="mt-1 text-xs text-ink-light">JPG, PNG, MP4 — max 50 MB</p>
-                  </div>
-                </div>
-                <div class="flex items-start gap-2.5 rounded-sm border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                  <i data-lucide="triangle-alert" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600"></i>
-                  <p>For life-threatening emergencies, call <strong class="ml-1 font-semibold">911</strong> immediately. This form is for non-urgent incident reporting only.</p>
-                </div>
-                <div class="flex justify-end pt-2">
-                  <button type="submit" class="btn-primary">Submit incident <i data-lucide="send" class="h-3.5 w-3.5"></i></button>
-                </div>
-              </form>
-
-            </div>
-          </div>
-        </div>
-
-        <div id="page-tracking" class="page hidden max-w-[1100px] p-8">
-          <div class="mb-8">
-            <p class="mb-1.5 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">MANAGEMENT</p>
-            <h1 class="font-serif text-3xl text-ink">Case Tracking</h1>
-            <p class="mt-1 text-sm text-ink-muted">Monitor and assign community reports.</p>
-          </div>
-
-          <div class="mb-6 grid grid-cols-3 gap-3">
-            <div class="flex items-center justify-between rounded-sm border border-amber-200 bg-amber-50 p-4">
-              <span class="text-xs font-medium text-ink-muted">Pending</span>
-              <span class="font-mono text-2xl font-semibold text-amber-600">24</span>
-            </div>
-            <div class="flex items-center justify-between rounded-sm border border-blue-200 bg-blue-50 p-4">
-              <span class="text-xs font-medium text-ink-muted">Active Assignments</span>
-              <span class="font-mono text-2xl font-semibold text-blue-700">15</span>
-            </div>
-            <div class="flex items-center justify-between rounded-sm border border-green-200 bg-green-50 p-4">
-              <span class="text-xs font-medium text-ink-muted">Resolved Today</span>
-              <span class="font-mono text-2xl font-semibold text-green-700">8</span>
-            </div>
-          </div>
-
-          <div class="mb-4 flex flex-col gap-3 sm:flex-row">
-            <div class="relative flex-1">
-              <i data-lucide="search" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
-              <input type="text" class="form-input h-9 pl-9 text-sm" placeholder="Search case ID, reporter, or category...">
-            </div>
-            <div class="flex gap-2">
-              <select class="form-input h-9 w-36 text-sm">
-                <option value="">All statuses</option>
-                <option value="pending">Pending</option>
-                <option value="assigned">Assigned</option>
-                <option value="resolved">Resolved</option>
-              </select>
-              <button class="btn-ghost h-9 text-xs"><i data-lucide="filter" class="h-3.5 w-3.5"></i> Filter</button>
-            </div>
-          </div>
-
-          <div class="section-card overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="border-b border-border bg-sand">
-                    <th class="px-4 py-3 text-left font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Case ID</th>
-                    <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Reporter</th>
-                    <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Category</th>
-                    <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Filed</th>
-                    <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Status</th>
-                    <th class="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Action</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-border">
-                  <tr class="transition-colors hover:bg-sand/30">
-                    <td class="px-4 py-3.5"><span class="case-id">#BC-2023-104</span></td>
-                    <td class="px-4 py-3.5">
-                      <div class="flex items-center gap-2.5">
-                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-blue-100 text-[10px] font-bold text-blue-700">JD</div>
-                        <span class="text-sm text-ink">Juan Dela Cruz</span>
-                      </div>
-                    </td>
-                    <td class="px-4 py-3.5 text-sm text-ink-muted">Streetlight Repair</td>
-                    <td class="px-4 py-3.5 font-mono text-xs text-ink-muted">Oct 24, 2023</td>
-                    <td class="px-4 py-3.5">
-                      <span class="status-badge status-pending"><span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>pending</span>
-                    </td>
-                    <td class="px-4 py-3.5 text-right">
-                      <button onclick="openModal('#BC-2023-104', 'Streetlight Repair', 'Juan Dela Cruz', 'Oct 24, 2023')" class="btn-primary px-3 py-1.5 text-xs">Assign</button>
-                    </td>
-                  </tr>
-                  <tr class="transition-colors hover:bg-sand/30">
-                    <td class="px-4 py-3.5"><span class="case-id">#BC-2023-103</span></td>
-                    <td class="px-4 py-3.5">
-                      <div class="flex items-center gap-2.5">
-                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-purple-100 text-[10px] font-bold text-purple-700">MR</div>
-                        <span class="text-sm text-ink">Maria Reyes</span>
-                      </div>
-                    </td>
-                    <td class="px-4 py-3.5 text-sm text-ink-muted">Waste Collection</td>
-                    <td class="px-4 py-3.5 font-mono text-xs text-ink-muted">Oct 23, 2023</td>
-                    <td class="px-4 py-3.5">
-                      <span class="status-badge status-assigned"><span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>assigned</span>
-                    </td>
-                    <td class="px-4 py-3.5 text-right">
-                      <button class="btn-ghost px-3 py-1.5 text-xs">Details</button>
-                    </td>
-                  </tr>
-                  <tr class="transition-colors hover:bg-sand/30">
-                    <td class="px-4 py-3.5"><span class="case-id">#BC-2023-102</span></td>
-                    <td class="px-4 py-3.5">
-                      <div class="flex items-center gap-2.5">
-                        <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-teal-100 text-[10px] font-bold text-teal-700">PS</div>
-                        <span class="text-sm text-ink">Pedro Santos</span>
-                      </div>
-                    </td>
-                    <td class="px-4 py-3.5 text-sm text-ink-muted">Noise Complaint</td>
-                    <td class="px-4 py-3.5 font-mono text-xs text-ink-muted">Oct 22, 2023</td>
-                    <td class="px-4 py-3.5">
-                      <span class="status-badge status-resolved"><span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>resolved</span>
-                    </td>
-                    <td class="px-4 py-3.5 text-right">
-                      <button class="btn-ghost px-3 py-1.5 text-xs">Details</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="flex items-center justify-between border-t border-border bg-white px-4 py-3">
-              <span class="text-xs text-ink-muted">Showing 3 of 5 cases</span>
-              <div class="flex gap-1">
-                <button class="rounded-sm p-1 text-ink-muted opacity-30 hover:bg-sand" disabled><i data-lucide="chevron-left" class="h-4 w-4"></i></button>
-                <button class="rounded-sm bg-navy px-2.5 py-0.5 text-xs text-white">1</button>
-                <button class="rounded-sm px-2.5 py-0.5 text-xs text-ink-muted hover:bg-sand">2</button>
-                <button class="rounded-sm p-1 text-ink-muted hover:bg-sand"><i data-lucide="chevron-right" class="h-4 w-4"></i></button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="assign-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onclick="closeModal()">
-          <div class="w-full max-w-md rounded-sm bg-white shadow-2xl" onclick="event.stopPropagation()">
-            <div class="flex items-center justify-between border-b border-border px-5 py-4">
-              <div>
-                <p class="mb-0.5 font-mono text-xs uppercase tracking-widest text-ink-muted">ASSIGNMENT</p>
-                <h3 class="font-serif text-lg text-ink">Assign Personnel</h3>
-              </div>
-              <button onclick="closeModal()" class="rounded-sm p-1 text-ink-muted transition-colors hover:bg-sand hover:text-ink">
-                <i data-lucide="x" class="h-4 w-4"></i>
-              </button>
-            </div>
-            <div class="space-y-4 p-5">
-              <div class="rounded-sm bg-sand p-3.5">
-                <p class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-ink-muted">Case Details</p>
-                <p id="modal-case-title" class="text-sm font-semibold text-ink">#BC-2023-104 — Streetlight Repair</p>
-                <p id="modal-case-sub" class="mt-0.5 text-xs text-ink-muted">Reported by Juan Dela Cruz · Oct 24, 2023</p>
-              </div>
-              <div>
-                <label class="form-label">Assign to</label>
-                <select class="form-input">
-                  <option value="">Select personnel or team...</option>
-                  <option>Maintenance Team Alpha (Available)</option>
-                  <option>Quick Response Team Beta (Available)</option>
-                  <option>Engr. Roberto Cruz (Busy)</option>
-                </select>
-              </div>
-              <div>
-                <label class="form-label">Instructions <span class="font-normal normal-case tracking-normal text-ink-light">(optional)</span></label>
-                <textarea class="form-input resize-none" rows="3" placeholder="Add specific instructions for the assigned team..."></textarea>
-              </div>
-            </div>
-            <div class="flex justify-end gap-2 border-t border-border bg-sand px-5 py-4">
-              <button onclick="closeModal()" class="btn-ghost px-4 py-2 text-sm">Cancel</button>
-              <button onclick="confirmAssignment(this)" class="btn-primary px-5 py-2 text-sm transition-opacity">
-                Confirm assignment <i data-lucide="send" class="h-3 w-3"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div id="page-admin" class="page hidden max-w-[1100px] p-8">
-          <div class="mb-8 flex items-start justify-between">
-            <div>
-              <p class="mb-1.5 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">ANALYTICS</p>
-              <h1 class="font-serif text-3xl text-ink">Administrative Reports</h1>
-              <p class="mt-1 text-sm text-ink-muted">Community incident volumes and resolution metrics.</p>
-            </div>
-            <button class="btn-ghost mt-1 shrink-0 text-sm"><i data-lucide="download" class="h-3.5 w-3.5"></i> Export report</button>
-          </div>
-
-          <div class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <div class="metric-card">
-              <div class="flex items-start justify-between">
-                <span class="leading-tight text-xs font-medium uppercase tracking-wide text-ink-muted">Total Reports</span>
-                <i data-lucide="file-text" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-light"></i>
-              </div>
-              <div class="mt-3 font-serif text-3xl text-navy">1,248</div>
-              <p class="mt-1.5 flex items-center gap-1 text-xs text-green-600"><i data-lucide="trending-up" class="h-3 w-3"></i>+12% vs last month</p>
-            </div>
-            <div class="metric-card">
-              <div class="flex items-start justify-between">
-                <span class="leading-tight text-xs font-medium uppercase tracking-wide text-ink-muted">Resolution Rate</span>
-                <i data-lucide="check-circle" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-light"></i>
-              </div>
-              <div class="mt-3 font-serif text-3xl text-navy">87.5%</div>
-              <p class="mt-1.5 flex items-center gap-1 text-xs text-green-600"><i data-lucide="trending-up" class="h-3 w-3"></i>+2.4% vs last month</p>
-            </div>
-            <div class="metric-card">
-              <div class="flex items-start justify-between">
-                <span class="leading-tight text-xs font-medium uppercase tracking-wide text-ink-muted">Pending Cases</span>
-                <i data-lucide="triangle-alert" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-light"></i>
-              </div>
-              <div class="mt-3 font-serif text-3xl text-navy">156</div>
-              <p class="mt-1.5 flex items-center gap-1 text-xs text-red-500"><i data-lucide="trending-down" class="h-3 w-3"></i>-5% vs last month</p>
-            </div>
-            <div class="metric-card">
-              <div class="flex items-start justify-between">
-                <span class="leading-tight text-xs font-medium uppercase tracking-wide text-ink-muted">Avg Response Time</span>
-                <i data-lucide="clock" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-light"></i>
-              </div>
-              <div class="mt-3 font-serif text-3xl text-navy">4.2 hrs</div>
-              <p class="mt-1.5 flex items-center gap-1 text-xs text-ink-muted"><i data-lucide="minus" class="h-3 w-3"></i>no change vs last month</p>
-            </div>
-          </div>
-
-          <div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_280px]">
-            <div class="section-card p-6">
-              <div class="mb-6 flex items-center justify-between">
-                <div>
-                  <h3 class="font-serif text-lg text-ink">Monthly Report Volume</h3>
-                  <p class="mt-0.5 text-xs text-ink-muted">January – December 2023</p>
-                </div>
-                <button class="font-medium text-xs text-navy hover:underline">View details</button>
-              </div>
-              <div class="relative">
-                <svg viewBox="0 0 640 200" class="w-full h-[200px]">
-                  <line x1="0" y1="0" x2="640" y2="0" stroke="var(--border)" stroke-width="1"></line>
-                  <line x1="0" y1="50" x2="640" y2="50" stroke="var(--border)" stroke-width="1"></line>
-                  <line x1="0" y1="100" x2="640" y2="100" stroke="var(--border)" stroke-width="1"></line>
-                  <line x1="0" y1="150" x2="640" y2="150" stroke="var(--border)" stroke-width="1"></line>
-                  <line x1="0" y1="200" x2="640" y2="200" stroke="var(--border)" stroke-width="1"></line>
-
-                  <text x="0" y="15" fill="var(--ink-light)" font-size="10" font-family="JetBrains Mono">170</text>
-                  <text x="0" y="65" fill="var(--ink-light)" font-size="10" font-family="JetBrains Mono">113</text>
-                  <text x="0" y="115" fill="var(--ink-light)" font-size="10" font-family="JetBrains Mono">57</text>
-                  <text x="0" y="165" fill="var(--ink-light)" font-size="10" font-family="JetBrains Mono">0</text>
-
-                  <g><rect x="30" y="105.882" width="32" height="94.118" fill="#1a3a8a" opacity="0.7" rx="1"></rect><text x="46" y="218" fill="var(--ink-light)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">J</text></g>
-                  <g><rect x="80" y="88.235" width="32" height="111.765" fill="#1a3a8a" opacity="0.727" rx="1"></rect><text x="96" y="218" fill="var(--ink-light)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">F</text></g>
-                  <g><rect x="130" y="115.294" width="32" height="84.706" fill="#1a3a8a" opacity="0.755" rx="1"></rect><text x="146" y="218" fill="var(--ink-light)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">M</text></g>
-                  <g><rect x="180" y="70.588" width="32" height="129.412" fill="#1a3a8a" opacity="0.782" rx="1"></rect><text x="196" y="218" fill="var(--ink-light)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">A</text></g>
-                  <g><rect x="230" y="84.706" width="32" height="115.294" fill="#1a3a8a" opacity="0.809" rx="1"></rect><text x="246" y="218" fill="var(--ink-light)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">M</text></g>
-                  <g><rect x="280" y="47.059" width="32" height="152.941" fill="#1a3a8a" opacity="0.836" rx="1"></rect><text x="296" y="218" fill="var(--ink-light)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">J</text></g>
-                  <g><rect x="330" y="64.706" width="32" height="135.294" fill="#1a3a8a" opacity="0.864" rx="1"></rect><text x="346" y="218" fill="var(--ink-light)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">J</text></g>
-                  <g><rect x="380" y="35.294" width="32" height="164.706" fill="#1a3a8a" opacity="0.891" rx="1"></rect><text x="396" y="218" fill="var(--ink-light)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">A</text></g>
-                  <g><rect x="430" y="52.941" width="32" height="147.059" fill="#1a3a8a" opacity="0.918" rx="1"></rect><text x="446" y="218" fill="var(--ink-light)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">S</text></g>
-                  <g><rect x="480" y="11.765" width="32" height="188.235" fill="#1a3a8a" opacity="0.945" rx="1"></rect><text x="496" y="218" fill="var(--ink-light)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">O</text></g>
-                  <g><rect x="530" y="29.412" width="32" height="170.588" fill="#1a3a8a" opacity="0.973" rx="1"></rect><text x="546" y="218" fill="var(--ink-light)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">N</text></g>
-                  <g><rect x="580" y="0" width="32" height="200" fill="var(--lime)" opacity="1" rx="1"></rect><text x="596" y="218" fill="var(--ink-light)" font-size="9" text-anchor="middle" font-family="JetBrains Mono">D</text></g>
-                </svg>
-                <p class="mt-1 font-mono text-[10px] text-ink-light">* Latest month highlighted in green</p>
-              </div>
-            </div>
-
-            <div class="section-card flex flex-col p-6">
-              <h3 class="mb-4 font-serif text-lg text-ink">By Category</h3>
-              <div class="mb-5 flex h-3 gap-px overflow-hidden rounded-sm">
-                <div style="width: 42%; background: #00236f;" title="Infrastructure: 42%"></div>
-                <div style="width: 28%; background: #1a3a8a;" title="Sanitation: 28%"></div>
-                <div style="width: 15%; background: #b5f23d;" title="Security: 15%"></div>
-                <div style="width: 8%; background: #6b7280;" title="Noise: 8%"></div>
-                <div style="width: 7%; background: #d1d5db;" title="Other: 7%"></div>
-              </div>
-              <div class="flex-1 space-y-2.5">
-                <div class="flex items-center gap-3">
-                  <div class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background: #00236f;"></div>
-                  <span class="flex-1 text-sm text-ink">Infrastructure</span>
-                  <span class="font-mono text-xs font-semibold text-ink">42%</span>
-                  <div class="h-1.5 w-20 overflow-hidden rounded-sm bg-border"><div class="h-full rounded-sm" style="width: 42%; background: #00236f;"></div></div>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background: #1a3a8a;"></div>
-                  <span class="flex-1 text-sm text-ink">Sanitation</span>
-                  <span class="font-mono text-xs font-semibold text-ink">28%</span>
-                  <div class="h-1.5 w-20 overflow-hidden rounded-sm bg-border"><div class="h-full rounded-sm" style="width: 28%; background: #1a3a8a;"></div></div>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background: #b5f23d;"></div>
-                  <span class="flex-1 text-sm text-ink">Security</span>
-                  <span class="font-mono text-xs font-semibold text-ink">15%</span>
-                  <div class="h-1.5 w-20 overflow-hidden rounded-sm bg-border"><div class="h-full rounded-sm" style="width: 15%; background: #b5f23d;"></div></div>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background: #6b7280;"></div>
-                  <span class="flex-1 text-sm text-ink">Noise</span>
-                  <span class="font-mono text-xs font-semibold text-ink">8%</span>
-                  <div class="h-1.5 w-20 overflow-hidden rounded-sm bg-border"><div class="h-full rounded-sm" style="width: 8%; background: #6b7280;"></div></div>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background: #d1d5db;"></div>
-                  <span class="flex-1 text-sm text-ink">Other</span>
-                  <span class="font-mono text-xs font-semibold text-ink">7%</span>
-                  <div class="h-1.5 w-20 overflow-hidden rounded-sm bg-border"><div class="h-full rounded-sm" style="width: 7%; background: #d1d5db;"></div></div>
-                </div>
-              </div>
-              <div class="mt-5 border-t border-border pt-4">
-                <p class="text-xs text-ink-muted">Total incidents tracked</p>
-                <p class="mt-0.5 font-serif text-2xl text-navy">1,248</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="section-card">
-            <div class="flex items-center justify-between border-b border-border px-6 py-4">
-              <h3 class="font-serif text-lg text-ink">Recent Reports</h3>
-              <span class="text-xs text-ink-muted">Last 5 entries</span>
-            </div>
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="border-b border-border bg-sand">
-                  <th class="px-5 py-3 text-left font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Case ID</th>
-                  <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Category</th>
-                  <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Filed</th>
-                  <th class="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Status</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-border">
-                <tr class="cursor-pointer transition-colors hover:bg-sand/30">
-                  <td class="px-5 py-3"><span class="case-id">#BC-2023-104</span></td>
-                  <td class="px-5 py-3 text-sm text-ink">Streetlight Repair</td>
-                  <td class="px-5 py-3 font-mono text-xs text-ink-muted">Oct 24</td>
-                  <td class="px-5 py-3"><span class="status-badge status-pending">pending</span></td>
-                </tr>
-                <tr class="cursor-pointer transition-colors hover:bg-sand/30">
-                  <td class="px-5 py-3"><span class="case-id">#BC-2023-103</span></td>
-                  <td class="px-5 py-3 text-sm text-ink">Waste Collection</td>
-                  <td class="px-5 py-3 font-mono text-xs text-ink-muted">Oct 23</td>
-                  <td class="px-5 py-3"><span class="status-badge status-assigned">assigned</span></td>
-                </tr>
-                <tr class="cursor-pointer transition-colors hover:bg-sand/30">
-                  <td class="px-5 py-3"><span class="case-id">#BC-2023-102</span></td>
-                  <td class="px-5 py-3 text-sm text-ink">Noise Complaint</td>
-                  <td class="px-5 py-3 font-mono text-xs text-ink-muted">Oct 22</td>
-                  <td class="px-5 py-3"><span class="status-badge status-resolved">resolved</span></td>
-                </tr>
-                <tr class="cursor-pointer transition-colors hover:bg-sand/30">
-                  <td class="px-5 py-3"><span class="case-id">#BC-2023-101</span></td>
-                  <td class="px-5 py-3 text-sm text-ink">Road Damage</td>
-                  <td class="px-5 py-3 font-mono text-xs text-ink-muted">Oct 21</td>
-                  <td class="px-5 py-3"><span class="status-badge status-pending">pending</span></td>
-                </tr>
-                <tr class="cursor-pointer transition-colors hover:bg-sand/30">
-                  <td class="px-5 py-3"><span class="case-id">#BC-2023-100</span></td>
-                  <td class="px-5 py-3 text-sm text-ink">Drainage Issue</td>
-                  <td class="px-5 py-3 font-mono text-xs text-ink-muted">Oct 20</td>
-                  <td class="px-5 py-3"><span class="status-badge status-assigned">assigned</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </main>
-    </div>
-  </div>
-
-  <script>
-    // Initialize Icons
-    lucide.createIcons();
-
-    // =============== NAVIGATION LOGIC =============== //
-    function navigate(targetId) {
-      // Update sidebar active states
-      document.querySelectorAll('.sidebar-link').forEach(btn => btn.classList.remove('active'));
-      const activeBtn = document.querySelector(`.sidebar-link[data-target="${targetId}"]`);
-      if (activeBtn) activeBtn.classList.add('active');
-
-      // Update header title based on id
-      const titles = {
-        'dashboard': 'Dashboard',
-        'submit': 'Submit Report',
-        'tracking': 'Case Tracking',
-        'admin': 'Reports / Admin'
-      };
-      document.getElementById('header-title').innerText = titles[targetId];
-
-      // Show/Hide Pages
-      document.querySelectorAll('.page').forEach(page => {
-        page.classList.add('hidden');
-        page.classList.remove('block');
-      });
-      document.getElementById('page-' + targetId).classList.remove('hidden');
-      document.getElementById('page-' + targetId).classList.add('block');
+{% block extra_js %}
+<script>
+  function switchLoginTab(tab) {
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    if (tab === 'login') {
+      document.getElementById('form-login').classList.remove('hidden');
+      document.getElementById('form-register').classList.add('hidden');
+      document.getElementById('login-title').innerText = 'Welcome back.';
+      document.getElementById('login-subtitle').innerText = 'RESIDENT PORTAL';
+    } else {
+      document.getElementById('form-login').classList.add('hidden');
+      document.getElementById('form-register').classList.remove('hidden');
+      document.getElementById('login-title').innerText = 'Create account.';
+      document.getElementById('login-subtitle').innerText = 'NEW ACCOUNT';
     }
-
-    // =============== LOGIN LOGIC =============== //
-    function switchLoginTab(tab) {
-      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-
-      if(tab === 'login') {
-        document.getElementById('form-login').classList.remove('hidden');
-        document.getElementById('form-register').classList.add('hidden');
-        document.getElementById('login-title').innerText = 'Welcome back.';
-        document.getElementById('login-subtitle').innerText = 'RESIDENT PORTAL';
-      } else {
-        document.getElementById('form-login').classList.add('hidden');
-        document.getElementById('form-register').classList.remove('hidden');
-        document.getElementById('login-title').innerText = 'Create account.';
-        document.getElementById('login-subtitle').innerText = 'NEW ACCOUNT';
-      }
-    }
-
-    function togglePassword(inputId, iconId) {
-      const input = document.getElementById(inputId);
-      const icon = document.getElementById(iconId);
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.setAttribute('data-lucide', 'eye-off');
-      } else {
-        input.type = 'password';
-        icon.setAttribute('data-lucide', 'eye');
-      }
-      lucide.createIcons(); // re-init icon
-    }
-
-    function handleAuth(e) {
-      e.preventDefault();
-      document.getElementById('view-login').classList.add('hidden');
-      document.getElementById('view-app').classList.remove('hidden');
-      document.getElementById('view-app').classList.add('flex');
-    }
-
-    function logout() {
-      document.getElementById('view-app').classList.add('hidden');
-      document.getElementById('view-app').classList.remove('flex');
-      document.getElementById('view-login').classList.remove('hidden');
-    }
-
-    // =============== SUBMIT FORM LOGIC =============== //
-    function switchSubmitTab(tab) {
-      document.getElementById('tab-sub-complaint').classList.toggle('active', tab === 'complaint');
-      document.getElementById('tab-sub-incident').classList.toggle('active', tab === 'incident');
-
-      if(tab === 'complaint') {
-        document.getElementById('form-complaint').classList.remove('hidden');
-        document.getElementById('form-incident').classList.add('hidden');
-      } else {
-        document.getElementById('form-complaint').classList.add('hidden');
-        document.getElementById('form-incident').classList.remove('hidden');
-      }
-    }
-
-    function handleFormSubmit(e) {
-      e.preventDefault();
-      const toast = document.getElementById('toast-success');
-      toast.classList.remove('hidden');
-      setTimeout(() => {
-        toast.classList.add('hidden');
-        e.target.reset(); // clear form
-      }, 3000);
-    }
-
-    // =============== MODAL LOGIC =============== //
-    function openModal(id, title, reporter, date) {
-      document.getElementById('modal-case-title').innerText = `${id} — ${title}`;
-      document.getElementById('modal-case-sub').innerText = `Reported by ${reporter} · ${date}`;
-      document.getElementById('assign-modal').classList.remove('hidden');
-    }
-
-    function closeModal() {
-      document.getElementById('assign-modal').classList.add('hidden');
-    }
-
-    function confirmAssignment(btn) {
-      const originalText = btn.innerHTML;
-      btn.innerHTML = 'Processing...';
-      btn.disabled = true;
-      btn.classList.add('opacity-70');
-
-      setTimeout(() => {
-        btn.innerHTML = '✓ Assigned';
-        setTimeout(() => {
-          closeModal();
-          btn.innerHTML = originalText;
-          btn.disabled = false;
-          btn.classList.remove('opacity-70');
-        }, 1200);
-      }, 800);
-    }
-  </script>
-</body>
-</html>
+  }
+</script>
+{% endblock %}

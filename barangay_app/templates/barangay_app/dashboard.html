@@ -1,0 +1,182 @@
+{% extends "app_base.html" %}
+
+{% block title %}Staff Dashboard — Barangay Connect{% endblock %}
+
+{% block sidebar_subtitle %}Staff Portal{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'staff_dashboard' %}" class="sidebar-link active" data-target="dashboard">
+  <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Dashboard
+</a>
+{% if profile.is_official %}
+<a href="{% url 'official_reports' %}" class="sidebar-link" data-target="admin">
+  <i data-lucide="bar-chart-2" class="h-4 w-4"></i> Reports / Admin
+</a>
+{% endif %}
+{% endblock %}
+
+{% block user_role_label %}{{ profile.get_role_display }}{% endblock %}
+{% block header_title %}Staff Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-[1100px] p-8">
+  <div class="mb-8">
+    <p class="mb-1.5 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">MANAGEMENT</p>
+    <h1 class="font-serif text-3xl text-ink">Staff Dashboard</h1>
+    <p class="mt-1 text-sm text-ink-muted">Manage all resident reports and community concerns.</p>
+  </div>
+
+  <!-- Metric Cards -->
+  <div class="grid grid-cols-2 gap-3 lg:grid-cols-4 mb-8">
+    <div class="metric-card">
+      <div class="flex items-start justify-between">
+        <span class="text-xs font-medium uppercase tracking-wide text-ink-muted">Total Reports</span>
+        <i data-lucide="file-text" class="mt-0.5 h-3.5 w-3.5 text-ink-light"></i>
+      </div>
+      <div class="mt-2 font-serif text-3xl text-navy">{{ total_reports }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="flex items-start justify-between">
+        <span class="text-xs font-medium uppercase tracking-wide text-ink-muted">Pending</span>
+        <i data-lucide="clock" class="mt-0.5 h-3.5 w-3.5 text-ink-light"></i>
+      </div>
+      <div class="mt-2 font-serif text-3xl text-amber-600">{{ pending_count }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="flex items-start justify-between">
+        <span class="text-xs font-medium uppercase tracking-wide text-ink-muted">In Progress</span>
+        <i data-lucide="loader" class="mt-0.5 h-3.5 w-3.5 text-ink-light"></i>
+      </div>
+      <div class="mt-2 font-serif text-3xl text-blue-600">{{ in_progress_count }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="flex items-start justify-between">
+        <span class="text-xs font-medium uppercase tracking-wide text-ink-muted">Resolved</span>
+        <i data-lucide="check-circle" class="mt-0.5 h-3.5 w-3.5 text-ink-light"></i>
+      </div>
+      <div class="mt-2 font-serif text-3xl text-green-600">{{ resolved_count }}</div>
+    </div>
+  </div>
+
+  <!-- All Reports Table -->
+  <div class="section-card">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border px-5 py-3 gap-3">
+      <h3 class="font-serif text-lg text-ink">All Resident Reports</h3>
+      <div class="flex items-center gap-3">
+        {% if reports %}
+        <div class="relative w-full sm:w-64">
+          <i data-lucide="search" class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+          <input type="text" id="reportSearch" onkeyup="filterReports()" class="form-input py-1.5 pl-9 text-xs" placeholder="Search reports...">
+        </div>
+        {% endif %}
+        <span class="font-mono text-xs text-ink-muted whitespace-nowrap">{{ total_reports }} total</span>
+      </div>
+    </div>
+
+    {% if reports %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border bg-sand/40 text-left">
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Title & Description</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Submitted By</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Date</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Assigned To</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {% for report in reports %}
+          <tr class="report-row transition-colors hover:bg-sand/30" 
+              data-title="{{ report.title|lower }}" 
+              data-desc="{{ report.description|lower }}" 
+              data-resident="{{ report.resident.get_full_name|default:report.resident.username|lower }}">
+            <td class="px-5 py-3 max-w-md">
+              <p class="font-medium text-ink">{{ report.title }}</p>
+              <p class="mt-0.5 text-xs text-ink-muted">{{ report.description }}</p>
+            </td>
+            <td class="px-5 py-3 text-ink-muted whitespace-nowrap">
+              <div class="font-medium text-slate-800">{{ report.resident.get_full_name|default:report.resident.username }}</div>
+              {% if report.resident.profile.contact_number %}
+              <div class="text-[11px] text-ink-muted flex items-center gap-1 mt-0.5">
+                <i data-lucide="phone" class="h-3 w-3"></i> {{ report.resident.profile.contact_number }}
+              </div>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3 text-ink-muted whitespace-nowrap">{{ report.created_at|date:"M d, Y" }}</td>
+            <td class="px-5 py-3">
+              {% if profile.is_official %}
+                <form method="POST" action="{% url 'assign_report' report.id %}" class="inline-block">
+                  {% csrf_token %}
+                  <select name="staff_id" onchange="this.form.submit()" class="rounded-sm border border-border bg-white px-2 py-1 text-xs text-ink outline-none focus:border-navy">
+                    <option value="">Unassigned</option>
+                    {% for staff in staff_members %}
+                      <option value="{{ staff.id }}" {% if report.assigned_to == staff %}selected{% endif %}>
+                        {{ staff.get_full_name|default:staff.username }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </form>
+              {% else %}
+                <span class="text-xs text-ink">
+                  {% if report.assigned_to %}
+                    {{ report.assigned_to.get_full_name|default:report.assigned_to.username }}
+                  {% else %}
+                    <span class="text-ink-light">Unassigned</span>
+                  {% endif %}
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3 whitespace-nowrap">
+              {% if profile.is_official or report.assigned_to == user %}
+                <form method="POST" action="{% url 'update_report_status' report.id %}" class="inline-block">
+                  {% csrf_token %}
+                  <select name="status" onchange="this.form.submit()" class="rounded-sm border border-border bg-white px-2 py-1 text-xs font-semibold outline-none focus:border-navy
+                    {% if report.status == 'Pending' %}text-amber-600 border-amber-200
+                    {% elif report.status == 'In Progress' %}text-blue-700 border-blue-200
+                    {% else %}text-green-700 border-green-200{% endif %}">
+                    <option value="Pending" {% if report.status == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="In Progress" {% if report.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Resolved" {% if report.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                  </select>
+                </form>
+              {% else %}
+                <span class="status-badge {% if report.status == 'Pending' %}status-pending{% elif report.status == 'In Progress' %}status-in-progress{% else %}status-resolved{% endif %}">
+                  {{ report.status|lower }}
+                </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center">
+      <i data-lucide="clipboard-list" class="mx-auto mb-3 h-10 w-10 text-ink-light/40"></i>
+      <p class="text-sm font-medium text-ink-muted">No reports submitted yet</p>
+      <p class="mt-1 text-xs text-ink-light">Reports from residents will appear here.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function filterReports() {
+    const query = document.getElementById('reportSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('.report-row');
+    rows.forEach(row => {
+      const title = row.getAttribute('data-title') || '';
+      const desc = row.getAttribute('data-desc') || '';
+      const resident = row.getAttribute('data-resident') || '';
+      if (title.includes(query) || desc.includes(query) || resident.includes(query)) {
+        row.style.display = 'table-row';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+</script>
+{% endblock %}

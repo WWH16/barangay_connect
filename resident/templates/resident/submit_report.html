@@ -1,0 +1,214 @@
+{% extends "app_base.html" %}
+
+{% block title %}Submit Report — Barangay Connect{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'resident_dashboard' %}" class="sidebar-link" data-target="dashboard">
+  <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Dashboard
+</a>
+<a href="{% url 'submit_report' %}" class="sidebar-link active" data-target="submit">
+  <i data-lucide="file-plus" class="h-4 w-4"></i> Submit Report
+</a>
+{% endblock %}
+
+{% block user_role_label %}Resident{% endblock %}
+{% block header_title %}Submit Report{% endblock %}
+
+{% block content %}
+<div class="max-w-[780px] p-8">
+  <div class="mb-8">
+    <p class="mb-1.5 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">FORMS</p>
+    <h1 class="font-serif text-3xl text-ink">Submit a report</h1>
+    <p class="mt-1 text-sm text-ink-muted">Provide details below to file a formal complaint or report an incident.</p>
+  </div>
+
+  <!-- Form Type Tabs -->
+  <div class="mb-6 flex border-b border-border">
+    <button type="button" onclick="switchFormTab('complaint')" id="tab-sub-complaint" class="tab-btn active">
+      <i data-lucide="message-square" class="h-3.5 w-3.5"></i> Complaint Form
+    </button>
+    <button type="button" onclick="switchFormTab('incident')" id="tab-sub-incident" class="tab-btn">
+      <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i> Incident Form
+    </button>
+  </div>
+
+  <div class="section-card">
+    <div class="p-6 md:p-8">
+      <form method="POST" action="{% url 'submit_report' %}" enctype="multipart/form-data" class="space-y-5">
+        {% csrf_token %}
+        <input type="hidden" name="report_type" id="report_type_input" value="complaint">
+
+        <!-- COMPLAINT FIELDS -->
+        <div id="complaint-fields" class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="comp-category" class="form-label">Category</label>
+              <select id="comp-category" name="category" class="form-input" required>
+                <option value="">Select Category...</option>
+                <option value="Infrastructure">Infrastructure (Roads, Lights)</option>
+                <option value="Waste Management">Waste Management / Garbage</option>
+                <option value="Noise Disturbance">Noise Disturbance</option>
+                <option value="Public Safety">Public Safety</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+            <div>
+              <label for="comp-title" class="form-label">Title</label>
+              <div class="relative">
+                <i data-lucide="file-text" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+                <input id="comp-title" name="title" type="text" class="form-input pl-9" placeholder="e.g. Garbage piling up in block 4" required>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INCIDENT FIELDS (Hidden by default) -->
+        <div id="incident-fields" class="space-y-5 hidden">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="inc-category" class="form-label">Category</label>
+              <select id="inc-category" name="category" class="form-input">
+                <option value="">Select Incident Type...</option>
+                <option value="Fire Outbreak">Fire Outbreak</option>
+                <option value="Flooding / Calamity">Flooding / Calamity</option>
+                <option value="Road Accident">Road Accident</option>
+                <option value="Theft / Crime">Theft / Crime</option>
+                <option value="Public Hazard">Public Hazard (Fallen tree, wire)</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+            <div>
+              <label for="inc-location" class="form-label">Location</label>
+              <div class="relative">
+                <i data-lucide="map-pin" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+                <input id="inc-location" name="location" type="text" class="form-input pl-9" placeholder="e.g. Purok 3 near elementary school">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SHARED DESCRIPTION -->
+        <div>
+          <label for="description" class="form-label">Description</label>
+          <textarea id="description" name="description" rows="6" class="form-input resize-y" placeholder="Describe the issue in detail — what happened, when, who is affected, etc." required></textarea>
+        </div>
+
+        <!-- EVIDENCE UPLOAD (Shared, last part of the form) -->
+        <div>
+          <label class="form-label">Supporting Files or Evidence (Images / Documents)</label>
+          <div id="dropzone" onclick="document.getElementById('evidence').click()" class="relative border-2 border-dashed border-border hover:border-navy bg-white rounded-sm p-6 text-center cursor-pointer transition-all">
+            <input id="evidence" name="evidence" type="file" class="hidden">
+            <div class="space-y-2">
+              <i data-lucide="upload-cloud" class="mx-auto h-8 w-8 text-ink-light hover:text-navy transition-colors"></i>
+              <div class="text-xs text-ink-muted">
+                <span class="font-semibold text-navy hover:underline">Click to upload</span> or drag and drop
+              </div>
+              <p class="text-[10px] text-ink-light">PDF, PNG, JPG up to 10MB</p>
+              <div id="file-name" class="text-xs text-green-600 font-medium hidden flex items-center justify-center gap-1">
+                <i data-lucide="check" class="h-3.5 w-3.5"></i> <span id="file-name-text"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 border-t border-border pt-5">
+          <button type="submit" class="btn-primary">
+            <i data-lucide="send" class="h-3.5 w-3.5"></i> Submit Report
+          </button>
+          <a href="{% url 'resident_dashboard' %}" class="btn-ghost">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function switchFormTab(tab) {
+    document.getElementById('tab-sub-complaint').classList.toggle('active', tab === 'complaint');
+    document.getElementById('tab-sub-incident').classList.toggle('active', tab === 'incident');
+    document.getElementById('report_type_input').value = tab;
+
+    const complaintFields = document.getElementById('complaint-fields');
+    const incidentFields = document.getElementById('incident-fields');
+    
+    const compCategory = document.getElementById('comp-category');
+    const compTitle = document.getElementById('comp-title');
+    const incCategory = document.getElementById('inc-category');
+    const incLocation = document.getElementById('inc-location');
+
+    if (tab === 'complaint') {
+      complaintFields.classList.remove('hidden');
+      incidentFields.classList.add('hidden');
+      
+      compCategory.required = true;
+      compTitle.required = true;
+      incCategory.required = false;
+      incLocation.required = false;
+    } else {
+      complaintFields.classList.add('hidden');
+      incidentFields.classList.remove('hidden');
+      
+      compCategory.required = false;
+      compTitle.required = false;
+      incCategory.required = true;
+      incLocation.required = true;
+    }
+  }
+
+  // Drag and Drop JavaScript Implementation
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('evidence');
+  const fileNameDiv = document.getElementById('file-name');
+  const fileNameText = document.getElementById('file-name-text');
+
+  // Prevent default behaviors for drag events
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  // Highlight dropzone on drag over
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropzone.addEventListener(eventName, () => {
+      dropzone.classList.add('border-navy', 'bg-slate-50');
+    }, false);
+  });
+
+  // Remove highlight on drag leave
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, () => {
+      dropzone.classList.remove('border-navy', 'bg-slate-50');
+    }, false);
+  });
+
+  // Handle dropped files
+  dropzone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    if (files.length > 0) {
+      fileInput.files = files;
+      displayFileName(files[0].name);
+    }
+  }, false);
+
+  // Handle file input selection click
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) {
+      displayFileName(fileInput.files[0].name);
+    }
+  });
+
+  function displayFileName(name) {
+    fileNameText.innerText = name;
+    fileNameDiv.classList.remove('hidden');
+    lucide.createIcons();
+  }
+</script>
+{% endblock %}

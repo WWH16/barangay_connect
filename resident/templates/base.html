@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Barangay Connect{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500;600&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: '#00236f',
+            'navy-deep': '#001550',
+            'navy-mid': '#1a3a8a',
+            lime: '#fbbf24',
+            'lime-dim': '#d97706',
+            sand: '#f0ebe1',
+            'sand-mid': '#e8e0d2',
+            ink: '#0f1117',
+            'ink-muted': '#6b7280',
+            'ink-light': '#9ca3af',
+            border: '#e5e7eb',
+            'border-strong': '#d1d5db',
+          },
+          fontFamily: {
+            sans: ['Poppins', 'system-ui', 'sans-serif'],
+            serif: ['"DM Serif Display"', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer components {
+      .btn-primary {
+        @apply inline-flex items-center gap-2 rounded-sm bg-navy px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-navy-mid;
+      }
+      .btn-accent {
+        @apply inline-flex items-center gap-2 rounded-sm bg-lime px-5 py-2.5 text-sm font-semibold text-navy-deep transition-colors hover:bg-lime-dim;
+      }
+      .btn-ghost {
+        @apply inline-flex items-center gap-2 rounded-sm border border-border-strong bg-transparent px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-sand;
+      }
+      .form-input {
+        @apply w-full rounded-sm border border-border-strong bg-white px-3.5 py-2.5 text-sm text-ink outline-none transition-all focus:border-navy focus:ring-2 focus:ring-navy/10 placeholder:text-ink-light;
+      }
+      .form-label {
+        @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-muted;
+      }
+      .sidebar-link {
+        @apply flex items-center gap-3 rounded-sm px-4 py-2.5 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white/90;
+      }
+      .sidebar-link.active {
+        @apply bg-lime font-semibold text-navy-deep;
+      }
+      .sidebar-link.active i {
+        @apply text-navy-deep;
+      }
+      .metric-card {
+        @apply flex flex-col gap-1 rounded-sm border border-border bg-white p-6;
+      }
+      .section-card {
+        @apply rounded-sm border border-border bg-white;
+      }
+      .tab-btn {
+        @apply flex items-center gap-2 border-b-2 border-transparent px-5 py-3 text-sm font-medium text-ink-muted transition-all hover:text-navy;
+      }
+      .tab-btn.active {
+        @apply border-lime font-semibold text-navy;
+      }
+      .status-badge {
+        @apply inline-flex items-center gap-1.5 rounded-sm px-2 py-0.5 text-xs font-medium;
+      }
+      .status-pending {
+        @apply border border-amber-200 bg-amber-50 text-amber-600;
+      }
+      .status-assigned, .status-in-progress {
+        @apply border border-blue-200 bg-blue-50 text-blue-700;
+      }
+      .status-resolved {
+        @apply border border-green-200 bg-green-50 text-green-700;
+      }
+      .case-id {
+        @apply font-mono text-xs font-medium tracking-wide text-navy;
+      }
+    }
+
+    body {
+      background-color: #fafaf8;
+      color: #0f1117;
+    }
+
+    .bg-grid-pattern {
+      background-image: linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    .bg-line-pattern {
+      background-image: repeating-linear-gradient(45deg, white 0, white 1px, transparent 0, transparent 50%);
+      background-size: 10px 10px;
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  {% block body %}{% endblock %}
+
+  <script>
+    lucide.createIcons();
+
+    function togglePassword(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        input.type = 'password';
+        icon.setAttribute('data-lucide', 'eye');
+      }
+      lucide.createIcons();
+    }
+  </script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
