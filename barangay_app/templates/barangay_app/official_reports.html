@@ -45,151 +45,186 @@
   </div>
 
   <!-- Summary Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <div class="metric-card bg-navy-deep text-white border-none relative overflow-hidden">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Reports -->
+    <div class="metric-card bg-navy-deep text-white border-none relative overflow-hidden flex flex-col justify-between min-h-[140px]">
       <div class="absolute right-0 top-0 h-full w-24 opacity-[0.06] bg-line-pattern"></div>
-      <p class="text-xs font-semibold uppercase tracking-wider text-white/50">Total Reports Submitted</p>
-      <p class="text-4xl font-serif mt-2">{{ total_count }}</p>
-      <div class="mt-4 flex gap-4 text-xs text-white/70 border-t border-white/10 pt-3">
-        <span>Complaints: <strong>{{ complaints_count }}</strong></span>
-        <span>Incidents: <strong>{{ incidents_count }}</strong></span>
+      <div>
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-white/50">Total Reports</p>
+        <p class="text-3xl font-serif mt-1">{{ total_count }}</p>
+      </div>
+      <div class="mt-4 text-[11px] text-white/70 border-t border-white/10 pt-2 flex justify-between">
+        <span>Active: <strong>{{ pending_count|add:in_progress_count }}</strong></span>
+        <span>Resolved: <strong>{{ resolved_count }}</strong></span>
       </div>
     </div>
 
-    <div class="metric-card">
-      <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted">Workload Breakdown</p>
-      <div class="mt-3 space-y-2">
-        <div>
-          <div class="flex justify-between text-xs font-medium text-ink mb-1">
-            <span>Pending Resolution</span>
-            <span>{{ pending_count }}</span>
-          </div>
-          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-            <div class="bg-amber-500 h-full" style="width: {% widthratio pending_count total_count 100 %}%"></div>
-          </div>
+    <!-- Complaints Statistics -->
+    <div class="metric-card bg-white border border-border flex flex-col justify-between min-h-[140px]">
+      <div>
+        <div class="flex justify-between items-start">
+          <p class="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Complaints Statistics</p>
+          <span class="status-badge status-pending bg-amber-50 border-amber-200 text-amber-600 text-[9px] py-0.5 px-1.5">Complaints</span>
         </div>
-        <div>
-          <div class="flex justify-between text-xs font-medium text-ink mb-1">
-            <span>In Progress</span>
-            <span>{{ in_progress_count }}</span>
-          </div>
-          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-            <div class="bg-blue-500 h-full" style="width: {% widthratio in_progress_count total_count 100 %}%"></div>
-          </div>
-        </div>
+        <p class="text-3xl font-serif mt-1 text-navy">{{ complaints_count }}</p>
+      </div>
+      <div class="mt-4 text-[11px] text-ink-muted border-t border-border pt-2 flex justify-between">
+        <span>Res. Rate: <strong>{{ complaint_resolution_rate }}%</strong></span>
+        <span>Active: <strong>{{ pending_complaints|add:in_progress_complaints }}</strong></span>
       </div>
     </div>
 
-    <div class="metric-card">
-      <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted">Resolution Rate</p>
-      <div class="flex items-baseline gap-2 mt-2">
-        <p class="text-4xl font-serif text-green-600">{% widthratio resolved_count total_count 100 %}%</p>
-        <span class="text-xs text-ink-muted">Resolved ({{ resolved_count }} / {{ total_count }})</span>
+    <!-- Incident Statistics -->
+    <div class="metric-card bg-white border border-border flex flex-col justify-between min-h-[140px]">
+      <div>
+        <div class="flex justify-between items-start">
+          <p class="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Incident Statistics</p>
+          <span class="status-badge status-assigned bg-blue-50 border-blue-200 text-blue-700 text-[9px] py-0.5 px-1.5">Incidents</span>
+        </div>
+        <p class="text-3xl font-serif mt-1 text-navy">{{ incidents_count }}</p>
       </div>
-      <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-3">
-        <div class="bg-green-500 h-full" style="width: {% widthratio resolved_count total_count 100 %}%"></div>
+      <div class="mt-4 text-[11px] text-ink-muted border-t border-border pt-2 flex justify-between">
+        <span>Res. Rate: <strong>{{ incident_resolution_rate }}%</strong></span>
+        <span>Active: <strong>{{ pending_incidents|add:in_progress_incidents }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Resolution Rate -->
+    <div class="metric-card bg-white border border-border flex flex-col justify-between min-h-[140px]">
+      <div>
+        <p class="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Overall Resolution Rate</p>
+        <p class="text-3xl font-serif mt-1 text-green-600">{{ total_resolution_rate }}%</p>
+      </div>
+      <div class="mt-4 border-t border-border pt-2">
+        <div class="flex justify-between text-[10px] text-ink-muted mb-1">
+          <span>Resolved Cases</span>
+          <span>{{ resolved_count }} / {{ total_count }}</span>
+        </div>
+        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+          <div class="bg-green-500 h-full" style="width: {{ total_resolution_rate }}%"></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Visual Analytics Section -->
+  <!-- Row 2: Case Trend & Status Distribution -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 print:break-inside-avoid">
-    <!-- Chart 1: Status Breakdown -->
-    <div class="section-card p-6 flex flex-col justify-between">
-      <h3 class="font-serif text-sm font-semibold uppercase tracking-wider text-ink-muted mb-4">Status & Type Distribution</h3>
-      <div class="grid grid-cols-2 gap-2 h-44 items-center">
-        <div class="h-full relative">
-          <canvas id="statusChart"></canvas>
-        </div>
-        <div class="h-full relative">
-          <canvas id="typeChart"></canvas>
-        </div>
+    <!-- Chart 1: Case Trend (Monthly Report Volumes) -->
+    <div class="section-card lg:col-span-2 p-6 flex flex-col justify-between">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-serif text-sm font-semibold uppercase tracking-wider text-ink-muted">Case Trend (Monthly Report Volumes)</h3>
+        <span class="text-[10px] bg-sand px-2 py-0.5 rounded-full text-navy font-medium">Last 6 Months</span>
+      </div>
+      <div class="h-52 w-full relative">
+        <canvas id="caseTrendChart"></canvas>
       </div>
     </div>
 
-    <!-- Chart 2: Category Breakdown -->
+    <!-- Chart 2: Status & Type Breakdown -->
+    <div class="section-card lg:col-span-1 p-6 flex flex-col justify-between">
+      <h3 class="font-serif text-sm font-semibold uppercase tracking-wider text-ink-muted mb-4 font-bold">Status & Type Distribution</h3>
+      <div class="grid grid-cols-2 gap-4 h-52 items-center">
+        <div class="h-full relative flex flex-col justify-center">
+          <div class="h-36 relative">
+            <canvas id="statusChart"></canvas>
+          </div>
+          <div class="text-center text-[10px] font-medium text-ink-muted mt-2">Status</div>
+        </div>
+        <div class="h-full relative flex flex-col justify-center">
+          <div class="h-36 relative">
+            <canvas id="typeChart"></canvas>
+          </div>
+          <div class="text-center text-[10px] font-medium text-ink-muted mt-2">Type</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Category Breakdown & Details -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Category Chart -->
     <div class="section-card lg:col-span-2 p-6 flex flex-col justify-between">
       <h3 class="font-serif text-sm font-semibold uppercase tracking-wider text-ink-muted mb-4">Concerns by Category</h3>
-      <div class="h-44 w-full relative">
+      <div class="h-52 w-full relative">
         <canvas id="categoryChart"></canvas>
       </div>
     </div>
+
+    <!-- Distribution Details -->
+    <div class="section-card lg:col-span-1 p-6 flex flex-col justify-between">
+      <div>
+        <h3 class="font-serif text-sm font-semibold uppercase tracking-wider text-ink-muted mb-4">Category Distribution Details</h3>
+        {% if category_list %}
+          <div class="space-y-3 max-h-52 overflow-y-auto pr-1">
+            {% for cat in category_list %}
+              <div>
+                <div class="flex justify-between text-xs font-medium text-ink mb-1">
+                  <span>{{ cat.name }}</span>
+                  <span>{{ cat.count }}</span>
+                </div>
+                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                  <div class="bg-navy h-full" style="width: {% widthratio cat.count total_count 100 %}%"></div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-xs text-ink-muted py-4 text-center">No categories to display.</p>
+        {% endif %}
+      </div>
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-    <!-- Category Distribution Text Details -->
-    <div class="section-card lg:col-span-1 p-6">
-      <h3 class="font-serif text-lg text-ink mb-4">Distribution Details</h3>
-      {% if category_list %}
-        <div class="space-y-3.5">
-          {% for cat in category_list %}
-            <div>
-              <div class="flex justify-between text-xs font-medium text-ink mb-1">
-                <span>{{ cat.name }}</span>
-                <span>{{ cat.count }}</span>
-              </div>
-              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-navy h-full" style="width: {% widthratio cat.count total_count 100 %}%"></div>
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <p class="text-xs text-ink-muted py-4 text-center">No categories to display.</p>
-      {% endif %}
+  <!-- Row 4: Registry of Concerns (Full Width Table) -->
+  <div class="section-card w-full overflow-hidden mb-8">
+    <div class="border-b border-border px-5 py-4 flex justify-between items-center bg-sand/20">
+      <h3 class="font-serif text-lg text-ink">Registry of Concerns</h3>
+      <span class="font-mono text-xs text-ink-muted">Date Generated: {% now "Y-m-d H:i" %}</span>
     </div>
 
-    <!-- Complete Register Table -->
-    <div class="section-card lg:col-span-2 overflow-hidden">
-      <div class="border-b border-border px-5 py-4 flex justify-between items-center bg-sand/20">
-        <h3 class="font-serif text-lg text-ink">Registry of Concerns</h3>
-        <span class="font-mono text-xs text-ink-muted">Date Generated: {% now "Y-m-d H:i" %}</span>
-      </div>
-
-      <div class="overflow-x-auto">
-        <table class="w-full text-xs">
-          <thead>
-            <tr class="border-b border-border bg-sand/40 text-left">
-              <th class="px-4 py-2.5 font-semibold text-ink-muted">Type</th>
-              <th class="px-4 py-2.5 font-semibold text-ink-muted">Title</th>
-              <th class="px-4 py-2.5 font-semibold text-ink-muted">Submitter</th>
-              <th class="px-4 py-2.5 font-semibold text-ink-muted">Status</th>
-              <th class="px-4 py-2.5 font-semibold text-ink-muted">Evidence</th>
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead>
+          <tr class="border-b border-border bg-sand/40 text-left">
+            <th class="px-4 py-2.5 font-semibold text-ink-muted">Type</th>
+            <th class="px-4 py-2.5 font-semibold text-ink-muted">Title</th>
+            <th class="px-4 py-2.5 font-semibold text-ink-muted">Submitter</th>
+            <th class="px-4 py-2.5 font-semibold text-ink-muted">Status</th>
+            <th class="px-4 py-2.5 font-semibold text-ink-muted">Evidence</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {% for report in reports %}
+            <tr class="hover:bg-sand/10 transition-colors">
+              <td class="px-4 py-2.5 capitalize text-ink-muted whitespace-nowrap">{{ report.report_type }}</td>
+              <td class="px-4 py-2.5 font-medium text-ink">
+                <div>{{ report.title }}</div>
+                {% if report.location %}
+                  <div class="text-[10px] text-ink-light font-normal mt-0.5 flex items-center gap-0.5">
+                    <i data-lucide="map-pin" class="h-2.5 w-2.5"></i> {{ report.location }}
+                  </div>
+                {% endif %}
+              </td>
+              <td class="px-4 py-2.5 whitespace-nowrap">
+                <div>{{ report.resident.get_full_name|default:report.resident.username }}</div>
+                <div class="text-[10px] text-ink-light">{{ report.resident.profile.contact_number }}</div>
+              </td>
+              <td class="px-4 py-2.5">
+                <span class="status-badge {% if report.status == 'Pending' %}status-pending{% elif report.status == 'In Progress' %}status-in-progress{% else %}status-resolved{% endif %}">{{ report.status }}</span>
+              </td>
+              <td class="px-4 py-2.5 text-navy whitespace-nowrap">
+                {% if report.evidence %}
+                  <a href="{{ report.evidence.url }}" target="_blank" class="hover:underline flex items-center gap-1">
+                    <i data-lucide="file" class="h-3 w-3"></i> View File
+                  </a>
+                {% else %}
+                  <span class="text-ink-light">None</span>
+                {% endif %}
+              </td>
             </tr>
-          </thead>
-          <tbody class="divide-y divide-border">
-            {% for report in reports %}
-              <tr class="hover:bg-sand/10 transition-colors">
-                <td class="px-4 py-2.5 capitalize text-ink-muted whitespace-nowrap">{{ report.report_type }}</td>
-                <td class="px-4 py-2.5 font-medium text-ink">
-                  <div>{{ report.title }}</div>
-                  {% if report.location %}
-                    <div class="text-[10px] text-ink-light font-normal mt-0.5 flex items-center gap-0.5">
-                      <i data-lucide="map-pin" class="h-2.5 w-2.5"></i> {{ report.location }}
-                    </div>
-                  {% endif %}
-                </td>
-                <td class="px-4 py-2.5 whitespace-nowrap">
-                  <div>{{ report.resident.get_full_name|default:report.resident.username }}</div>
-                  <div class="text-[10px] text-ink-light">{{ report.resident.profile.contact_number }}</div>
-                </td>
-                <td class="px-4 py-2.5">
-                  <span class="status-badge {% if report.status == 'Pending' %}status-pending{% elif report.status == 'In Progress' %}status-in-progress{% else %}status-resolved{% endif %}">{{ report.status }}</span>
-                </td>
-                <td class="px-4 py-2.5 text-navy whitespace-nowrap">
-                  {% if report.evidence %}
-                    <a href="{{ report.evidence.url }}" target="_blank" class="hover:underline flex items-center gap-1">
-                      <i data-lucide="file" class="h-3 w-3"></i> View File
-                    </a>
-                  {% else %}
-                    <span class="text-ink-light">None</span>
-                  {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -216,7 +251,7 @@
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        title: { display: true, text: 'Status Breakdown', font: { family: 'Poppins', size: 10, weight: 'bold' } }
+        title: { display: false }
       }
     }
   });
@@ -239,7 +274,7 @@
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        title: { display: true, text: 'Report Types', font: { family: 'Poppins', size: 10, weight: 'bold' } }
+        title: { display: false }
       }
     }
   });
@@ -280,6 +315,90 @@
           beginAtZero: true,
           ticks: { stepSize: 1, font: { family: 'Poppins', size: 9 } },
           grid: { drawBorder: false, color: '#f1f5f9' }
+        },
+        x: {
+          ticks: { font: { family: 'Poppins', size: 9 } },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  // 4. Case Trend Chart (Line Chart with Area Gradients)
+  const ctxTrend = document.getElementById('caseTrendChart').getContext('2d');
+  
+  // Create color gradients
+  const complaintGradient = ctxTrend.createLinearGradient(0, 0, 0, 200);
+  complaintGradient.addColorStop(0, 'rgba(0, 35, 111, 0.15)');
+  complaintGradient.addColorStop(1, 'rgba(0, 35, 111, 0.0)');
+  
+  const incidentGradient = ctxTrend.createLinearGradient(0, 0, 0, 200);
+  incidentGradient.addColorStop(0, 'rgba(251, 191, 36, 0.15)');
+  incidentGradient.addColorStop(1, 'rgba(251, 191, 36, 0.0)');
+
+  const trendLabels = [
+    {% for label in trend_labels %}
+      "{{ label }}",
+    {% endfor %}
+  ];
+  const trendComplaints = [
+    {% for count in trend_complaints %}
+      {{ count }},
+    {% endfor %}
+  ];
+  const trendIncidents = [
+    {% for count in trend_incidents %}
+      {{ count }},
+    {% endfor %}
+  ];
+
+  new Chart(ctxTrend, {
+    type: 'line',
+    data: {
+      labels: trendLabels,
+      datasets: [
+        {
+          label: 'Complaints',
+          data: trendComplaints,
+          borderColor: '#00236f',
+          backgroundColor: complaintGradient,
+          fill: true,
+          tension: 0.35,
+          borderWidth: 2,
+          pointBackgroundColor: '#00236f',
+          pointHoverRadius: 6
+        },
+        {
+          label: 'Incidents',
+          data: trendIncidents,
+          borderColor: '#fbbf24',
+          backgroundColor: incidentGradient,
+          fill: true,
+          tension: 0.35,
+          borderWidth: 2,
+          pointBackgroundColor: '#fbbf24',
+          pointHoverRadius: 6
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            boxWidth: 12,
+            font: { family: 'Poppins', size: 10 }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, font: { family: 'Poppins', size: 9 } },
+          grid: { color: '#f1f5f9' }
         },
         x: {
           ticks: { font: { family: 'Poppins', size: 9 } },

@@ -108,12 +108,67 @@ def official_reports(request):
     in_progress_count = reports.filter(status='In Progress').count()
     resolved_count = reports.filter(status='Resolved').count()
 
+    # Complaints Breakdown
+    pending_complaints = reports.filter(report_type='complaint', status='Pending').count()
+    in_progress_complaints = reports.filter(report_type='complaint', status='In Progress').count()
+    resolved_complaints = reports.filter(report_type='complaint', status='Resolved').count()
+    complaint_resolution_rate = int((resolved_complaints / complaints_count * 100)) if complaints_count > 0 else 0
+
+    # Incidents Breakdown
+    pending_incidents = reports.filter(report_type='incident', status='Pending').count()
+    in_progress_incidents = reports.filter(report_type='incident', status='In Progress').count()
+    resolved_incidents = reports.filter(report_type='incident', status='Resolved').count()
+    incident_resolution_rate = int((resolved_incidents / incidents_count * 100)) if incidents_count > 0 else 0
+
+    # Overall Resolution Rate
+    total_resolution_rate = int((resolved_count / total_count * 100)) if total_count > 0 else 0
+
     # Category breakdowns
     categories = {}
     for r in reports:
         categories[r.category] = categories.get(r.category, 0) + 1
         
     category_list = [{'name': k, 'count': v} for k, v in categories.items()]
+
+    # Case Trend (Monthly report volumes) over the last 6 months
+    import datetime
+    from django.utils import timezone
+    from collections import OrderedDict
+
+    today = timezone.now().date()
+    months_data = OrderedDict()
+    
+    for i in range(5, -1, -1):
+        first_day_current = today.replace(day=1)
+        year = first_day_current.year
+        month = first_day_current.month - i
+        while month <= 0:
+            month += 12
+            year -= 1
+        month_date = datetime.date(year, month, 1)
+        month_key = month_date.strftime('%Y-%m')
+        month_label = month_date.strftime('%b %Y')
+        months_data[month_key] = {
+            'label': month_label,
+            'total': 0,
+            'complaints': 0,
+            'incidents': 0
+        }
+
+    for r in reports:
+        local_created_at = timezone.localtime(r.created_at)
+        r_month_key = local_created_at.strftime('%Y-%m')
+        if r_month_key in months_data:
+            months_data[r_month_key]['total'] += 1
+            if r.report_type == 'complaint':
+                months_data[r_month_key]['complaints'] += 1
+            elif r.report_type == 'incident':
+                months_data[r_month_key]['incidents'] += 1
+
+    trend_labels = [m['label'] for m in months_data.values()]
+    trend_totals = [m['total'] for m in months_data.values()]
+    trend_complaints = [m['complaints'] for m in months_data.values()]
+    trend_incidents = [m['incidents'] for m in months_data.values()]
 
     context = {
         'user': request.user,
@@ -125,6 +180,20 @@ def official_reports(request):
         'pending_count': pending_count,
         'in_progress_count': in_progress_count,
         'resolved_count': resolved_count,
+        'pending_complaints': pending_complaints,
+        'in_progress_complaints': in_progress_complaints,
+        'resolved_complaints': resolved_complaints,
+        'complaint_resolution_rate': complaint_resolution_rate,
+        'pending_incidents': pending_incidents,
+        'in_progress_incidents': in_progress_incidents,
+        'resolved_incidents': resolved_incidents,
+        'incident_resolution_rate': incident_resolution_rate,
+        'total_resolution_rate': total_resolution_rate,
         'category_list': category_list,
+        'trend_labels': trend_labels,
+        'trend_totals': trend_totals,
+        'trend_complaints': trend_complaints,
+        'trend_incidents': trend_incidents,
     }
     return render(request, 'barangay_app/official_reports.html', context)
+
