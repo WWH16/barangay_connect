@@ -27,19 +27,6 @@
 
 {% block content %}
 <div class="w-full p-8">
-  <!-- Toast Messages -->
-  {% if messages %}
-  <div class="mb-6 space-y-2">
-    {% for message in messages %}
-    <div class="rounded-sm border p-3 text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-200
-      {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-700
-      {% elif message.tags == 'success' %}border-green-200 bg-green-50 text-green-700
-      {% else %}border-blue-200 bg-blue-50 text-blue-700{% endif %}">
-      {{ message }}
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
 
   <!-- KPI SUMMARY CARDS -->
   <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

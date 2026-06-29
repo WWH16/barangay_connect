@@ -131,6 +131,20 @@
       }
       lucide.createIcons();
     }
+
+    // Auto-expire system toasts
+    document.addEventListener("DOMContentLoaded", function() {
+      const toasts = document.querySelectorAll('.system-toast');
+      toasts.forEach(function(toast) {
+        setTimeout(function() {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(-10px)';
+          setTimeout(function() {
+            toast.remove();
+          }, 300);
+        }, 5000);
+      });
+    });
   </script>
 
   {% block extra_js %}{% endblock %}

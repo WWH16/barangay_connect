@@ -37,13 +37,14 @@
       </div>
 
       {% if messages %}
-      <div class="mb-6 space-y-2">
+      <div id="toast-container" class="mb-6 space-y-2">
         {% for message in messages %}
-        <div class="rounded-sm border p-3 text-sm font-medium
+        <div class="system-toast flex items-center gap-2 rounded-sm border p-3 text-sm font-medium transition-all duration-300 transform translate-y-0 opacity-100
           {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-700
           {% elif message.tags == 'success' %}border-green-200 bg-green-50 text-green-700
           {% else %}border-blue-200 bg-blue-50 text-blue-700{% endif %}">
-          {{ message }}
+          <span class="flex-1">{{ message }}</span>
+          <button onclick="this.parentElement.remove()" class="text-lg leading-none opacity-40 hover:opacity-100 ml-auto focus:outline-none">&times;</button>
         </div>
         {% endfor %}
       </div>
