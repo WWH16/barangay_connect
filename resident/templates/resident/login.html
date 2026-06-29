@@ -32,7 +32,7 @@
       </div>
 
       <div class="mb-8">
-        <p id="login-subtitle" class="mb-2 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">RESIDENT PORTAL</p>
+        <p id="login-subtitle" class="mb-2 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">BARANGAY PORTAL</p>
         <h2 id="login-title" class="font-serif text-3xl text-ink">Welcome back.</h2>
       </div>
 
@@ -132,14 +132,20 @@
             <label class="form-label">Password</label>
             <div class="relative">
               <i data-lucide="lock" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
-              <input type="password" name="password" id="reg-pwd" class="form-input pl-9" placeholder="••••••••" required>
+              <input type="password" name="password" id="reg-pwd" class="form-input pl-9 pr-10" placeholder="••••••••" required>
+              <button type="button" onclick="togglePassword('reg-pwd', 'reg-pwd-icon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-light transition-colors hover:text-ink">
+                <i data-lucide="eye" id="reg-pwd-icon" class="h-3.5 w-3.5"></i>
+              </button>
             </div>
           </div>
           <div>
             <label class="form-label">Confirm Password</label>
             <div class="relative">
               <i data-lucide="lock" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
-              <input type="password" name="confirm_password" id="reg-pwd-confirm" class="form-input pl-9" placeholder="••••••••" required>
+              <input type="password" name="confirm_password" id="reg-pwd-confirm" class="form-input pl-9 pr-10" placeholder="••••••••" required>
+              <button type="button" onclick="togglePassword('reg-pwd-confirm', 'reg-pwd-confirm-icon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-light transition-colors hover:text-ink">
+                <i data-lucide="eye" id="reg-pwd-confirm-icon" class="h-3.5 w-3.5"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -165,12 +171,12 @@
       document.getElementById('form-login').classList.remove('hidden');
       document.getElementById('form-register').classList.add('hidden');
       document.getElementById('login-title').innerText = 'Welcome back.';
-      document.getElementById('login-subtitle').innerText = 'RESIDENT PORTAL';
+      document.getElementById('login-subtitle').innerText = 'BARANGAY PORTAL';
     } else {
       document.getElementById('form-login').classList.add('hidden');
       document.getElementById('form-register').classList.remove('hidden');
       document.getElementById('login-title').innerText = 'Create account.';
-      document.getElementById('login-subtitle').innerText = 'NEW ACCOUNT';
+      document.getElementById('login-subtitle').innerText = 'RESIDENT REGISTRATION';
     }
   }
 </script>
