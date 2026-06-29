@@ -82,6 +82,7 @@
             <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Submitted By</th>
             <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Date</th>
             <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Assigned To</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Remarks</th>
             <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Status</th>
           </tr>
         </thead>
@@ -128,6 +129,58 @@
               {% endif %}
             </td>
             <td class="px-5 py-3 whitespace-nowrap">
+              {% if report.remarks %}
+                <button type="button" onclick="openRemarksModal({{ report.id }})" class="inline-flex items-center gap-1.5 text-xs text-navy font-semibold hover:underline">
+                  <i data-lucide="message-square-text" class="h-4 w-4"></i> View Remarks
+                </button>
+              {% else %}
+                {% if profile.is_official or report.assigned_to == user %}
+                  <button type="button" onclick="openRemarksModal({{ report.id }})" class="inline-flex items-center gap-1.5 text-xs text-ink-light hover:text-navy font-medium">
+                    <i data-lucide="message-square-plus" class="h-4 w-4"></i> Add Remarks
+                  </button>
+                {% else %}
+                  <span class="text-xs text-ink-light italic">None</span>
+                {% endif %}
+              {% endif %}
+
+              <!-- Remarks Modal Container -->
+              <div id="remarks-modal-{{ report.id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4">
+                <div class="w-full max-w-md rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150">
+                  <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
+                    <h3 class="font-serif text-base text-ink font-semibold">Case Remarks & Updates</h3>
+                    <button type="button" onclick="closeRemarksModal({{ report.id }})" class="text-ink-light hover:text-ink">
+                      <i data-lucide="x" class="h-4 w-4"></i>
+                    </button>
+                  </div>
+                  
+                  <div class="mb-4">
+                    <p class="text-[9px] font-semibold uppercase tracking-wider text-ink-muted">Concern details</p>
+                    <p class="text-xs font-semibold text-ink mt-1">{{ report.title }}</p>
+                    <p class="text-[11px] text-ink-muted mt-0.5">{{ report.description|truncatewords:20 }}</p>
+                  </div>
+
+                  <form method="POST" action="{% url 'update_report_remarks' report.id %}">
+                    {% csrf_token %}
+                    <label class="form-label mb-1.5 text-[10px]">Remarks / Updates</label>
+                    {% if profile.is_official or report.assigned_to == user %}
+                      <textarea name="remarks" rows="4" placeholder="Add detailed investigation updates, case remarks, or official decisions here..." class="form-input w-full p-2 text-xs focus:border-navy mb-4 bg-white">{{ report.remarks }}</textarea>
+                      <div class="flex justify-end gap-2 pt-2 border-t border-border">
+                        <button type="button" onclick="closeRemarksModal({{ report.id }})" class="btn-ghost py-1.5 px-4 text-xs">Cancel</button>
+                        <button type="submit" class="btn-primary py-1.5 px-4 text-xs">Save Remarks</button>
+                      </div>
+                    {% else %}
+                      <div class="bg-[#fafaf8] p-3 border border-border rounded-sm min-h-[60px] mb-4 text-xs">
+                        <p class="text-ink-muted leading-relaxed whitespace-pre-wrap">{{ report.remarks|default:"No updates or case remarks added yet." }}</p>
+                      </div>
+                      <div class="flex justify-end pt-2 border-t border-border">
+                        <button type="button" onclick="closeRemarksModal({{ report.id }})" class="btn-ghost py-1 px-3 text-xs">Close</button>
+                      </div>
+                    {% endif %}
+                  </form>
+                </div>
+              </div>
+            </td>
+            <td class="px-5 py-3 whitespace-nowrap">
               {% if profile.is_official or report.assigned_to == user %}
                 <form method="POST" action="{% url 'update_report_status' report.id %}" class="inline-block">
                   {% csrf_token %}
@@ -147,6 +200,7 @@
               {% endif %}
             </td>
           </tr>
+
           {% endfor %}
         </tbody>
       </table>
@@ -164,6 +218,22 @@
 
 {% block extra_js %}
 <script>
+  function openRemarksModal(id) {
+    const modal = document.getElementById('remarks-modal-' + id);
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  function closeRemarksModal(id) {
+    const modal = document.getElementById('remarks-modal-' + id);
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
   function filterReports() {
     const query = document.getElementById('reportSearch').value.toLowerCase();
     const rows = document.querySelectorAll('.report-row');

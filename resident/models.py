@@ -55,6 +55,8 @@ class Report(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_reports')
+    remarks = models.TextField(blank=True, default='')
+
 
     class Meta:
         ordering = ['-created_at']

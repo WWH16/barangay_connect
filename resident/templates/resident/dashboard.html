@@ -104,16 +104,27 @@
         {% if reports %}
         <div class="section-card divide-y divide-border">
           {% for report in reports %}
-          <div class="report-row flex items-center gap-4 px-4 py-3 transition-colors hover:bg-sand/30" data-title="{{ report.title|lower }}" data-desc="{{ report.description|lower }}">
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-ink">{{ report.title }}</p>
-              <p class="text-xs text-ink-muted">{{ report.description|truncatewords:10 }}</p>
+          <div class="report-row flex flex-col gap-2 px-4 py-3.5 transition-colors hover:bg-sand/30" data-title="{{ report.title|lower }}" data-desc="{{ report.description|lower }}">
+            <div class="flex items-center justify-between gap-4">
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-ink">{{ report.title }}</p>
+                <p class="text-xs text-ink-muted mt-0.5">{{ report.description }}</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="status-badge {% if report.status == 'Pending' %}status-pending{% elif report.status == 'In Progress' %}status-in-progress{% else %}status-resolved{% endif %}">{{ report.status|lower }}</span>
+                <span class="w-20 shrink-0 text-right text-xs text-ink-light">{{ report.created_at|date:"M d, Y" }}</span>
+              </div>
             </div>
-            <span class="status-badge {% if report.status == 'Pending' %}status-pending{% elif report.status == 'In Progress' %}status-in-progress{% else %}status-resolved{% endif %}">{{ report.status|lower }}</span>
-            <span class="w-20 shrink-0 text-right text-xs text-ink-light">{{ report.created_at|date:"M d, Y" }}</span>
+            {% if report.remarks %}
+              <div class="bg-sand/30 border-l-2 border-lime px-3 py-2 rounded-sm text-xs mt-1">
+                <p class="font-semibold text-navy uppercase tracking-wider text-[10px]">Update from Barangay:</p>
+                <p class="text-ink-muted mt-0.5 leading-relaxed">{{ report.remarks }}</p>
+              </div>
+            {% endif %}
           </div>
           {% endfor %}
         </div>
+
         {% else %}
         <div class="section-card p-8 text-center">
           <i data-lucide="inbox" class="mx-auto mb-3 h-10 w-10 text-ink-light/40"></i>

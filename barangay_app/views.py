@@ -90,6 +90,30 @@ def update_report_status(request, report_id):
 
 
 @login_required(login_url='login')
+def update_report_remarks(request, report_id):
+    """Update report remarks, updates, or decisions. Staff can only update reports assigned to them or if they are officials."""
+    profile, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'resident'})
+    if not profile.is_staff_or_official:
+        messages.error(request, 'Access denied.')
+        return redirect('resident_dashboard')
+
+    if request.method == 'POST':
+        report = get_object_or_404(Report, id=report_id)
+        # Security check: if staff (but not official), must be assigned to them
+        if profile.is_staff and report.assigned_to != request.user:
+            messages.error(request, 'You can only update reports assigned to you.')
+            return redirect('staff_dashboard')
+
+        new_remarks = request.POST.get('remarks', '').strip()
+        report.remarks = new_remarks
+        report.save()
+        messages.success(request, 'Report remarks updated successfully.')
+
+    return redirect('staff_dashboard')
+
+
+@login_required(login_url='login')
+
 def official_reports(request):
     """Analytics and report generation screen for Barangay Officials."""
     profile, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'resident'})
