@@ -437,9 +437,14 @@ def add_user(request):
         role = request.POST.get('role', 'resident')
         status = request.POST.get('status', 'active')
         password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
 
         if not username or not email or not password or not first_name or not last_name:
             messages.error(request, 'Please fill in all required fields.')
+            return redirect('user_management')
+
+        if password != confirm_password:
+            messages.error(request, 'Passwords do not match.')
             return redirect('user_management')
 
         if User.objects.filter(username=username).exists():
@@ -495,10 +500,16 @@ def edit_user(request, target_user_id):
         role = request.POST.get('role', target_user.role)
         status = request.POST.get('status', target_user.status)
         password = request.POST.get('password', '').strip()
+        confirm_password = request.POST.get('confirm_password', '').strip()
 
         if not email or not first_name or not last_name:
             messages.error(request, 'First name, last name, and email are required.')
             return redirect('user_management')
+
+        if password:
+            if password != confirm_password:
+                messages.error(request, 'Passwords do not match.')
+                return redirect('user_management')
 
         # Check if email is taken by another user
         if User.objects.filter(email=email).exclude(user_id=target_user_id).exists():

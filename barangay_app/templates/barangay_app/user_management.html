@@ -198,7 +198,7 @@
       </button>
     </div>
 
-    <form method="POST" action="{% url 'add_user' %}" class="space-y-4">
+    <form method="POST" action="{% url 'add_user' %}" onsubmit="return validateAddForm()" class="space-y-4">
       {% csrf_token %}
       
       <!-- Username -->
@@ -250,10 +250,16 @@
         </div>
       </div>
 
-      <!-- Temporary Password -->
-      <div>
-        <label class="form-label mb-1.5 text-[10px]">Password</label>
-        <input type="password" name="password" class="form-input w-full py-1.5 px-3 text-xs" placeholder="Temporary password" required>
+      <!-- Password & Confirm Password -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Password</label>
+          <input type="password" id="add-pwd" name="password" class="form-input w-full py-1.5 px-3 text-xs" placeholder="Password" required>
+        </div>
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Confirm Password</label>
+          <input type="password" id="add-pwd-confirm" name="confirm_password" class="form-input w-full py-1.5 px-3 text-xs" placeholder="Confirm password" required>
+        </div>
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-border mt-5">
@@ -277,7 +283,7 @@
       </button>
     </div>
 
-    <form id="edit-user-form" method="POST" class="space-y-4">
+    <form id="edit-user-form" method="POST" onsubmit="return validateEditForm()" class="space-y-4">
       {% csrf_token %}
       
       <!-- First & Last Names -->
@@ -323,10 +329,16 @@
         </div>
       </div>
 
-      <!-- Reset Password (optional) -->
-      <div>
-        <label class="form-label mb-1.5 text-[10px]">Reset Password</label>
-        <input type="password" name="password" class="form-input w-full py-1.5 px-3 text-xs" placeholder="Leave blank to keep current password">
+      <!-- Reset Password & Confirm (optional) -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Reset Password</label>
+          <input type="password" id="edit-pwd" name="password" class="form-input w-full py-1.5 px-3 text-xs" placeholder="Leave blank to keep current">
+        </div>
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Confirm Reset Password</label>
+          <input type="password" id="edit-pwd-confirm" name="confirm_password" class="form-input w-full py-1.5 px-3 text-xs" placeholder="Confirm password">
+        </div>
       </div>
 
       <div class="flex justify-end gap-2 pt-3 border-t border-border mt-5">
@@ -377,6 +389,28 @@
     const modal = document.getElementById('edit-user-modal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+  }
+
+  function validateAddForm() {
+    const pwd = document.getElementById('add-pwd').value;
+    const confirm = document.getElementById('add-pwd-confirm').value;
+    if (pwd !== confirm) {
+      alert("Passwords do not match!");
+      return false;
+    }
+    return true;
+  }
+
+  function validateEditForm() {
+    const pwd = document.getElementById('edit-pwd').value;
+    const confirm = document.getElementById('edit-pwd-confirm').value;
+    if (pwd || confirm) {
+      if (pwd !== confirm) {
+        alert("Passwords do not match!");
+        return false;
+      }
+    }
+    return true;
   }
 </script>
 {% endblock %}
