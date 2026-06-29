@@ -393,3 +393,143 @@ def official_reports(request):
         'trend_incidents': trend_incidents,
     }
     return render(request, 'barangay_app/official_reports.html', context)
+
+
+@login_required(login_url='login')
+def user_management(request):
+    """User accounts management console. Only accessible by Barangay Officials."""
+    if request.user.role != 'official':
+        messages.error(request, 'Only Barangay Officials can access the User Management panel.')
+        return redirect('staff_dashboard')
+
+    users = User.objects.all().order_by('-created_at')
+
+    # Summary Statistics
+    total_users = users.count()
+    residents_count = users.filter(role='resident').count()
+    staff_count = users.filter(role='staff').count()
+    officials_count = users.filter(role='official').count()
+
+    context = {
+        'user': request.user,
+        'users': users,
+        'total_users': total_users,
+        'residents_count': residents_count,
+        'staff_count': staff_count,
+        'officials_count': officials_count,
+    }
+    return render(request, 'barangay_app/user_management.html', context)
+
+
+@login_required(login_url='login')
+def add_user(request):
+    """Add a new user account. Only accessible by Barangay Officials."""
+    if request.user.role != 'official':
+        messages.error(request, 'Only Barangay Officials can add users.')
+        return redirect('staff_dashboard')
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        contact_number = request.POST.get('contact_number', '').strip()
+        role = request.POST.get('role', 'resident')
+        status = request.POST.get('status', 'active')
+        password = request.POST.get('password', '')
+
+        if not username or not email or not password or not first_name or not last_name:
+            messages.error(request, 'Please fill in all required fields.')
+            return redirect('user_management')
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f"Username '{username}' is already taken.")
+            return redirect('user_management')
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, f"An account with the email '{email}' already exists.")
+            return redirect('user_management')
+
+        # Create user
+        new_user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            role=role,
+            contact_number=contact_number,
+            status=status
+        )
+        
+        # If staff or official, set is_staff=True so they can log into admin panels if needed
+        if role in ('staff', 'official'):
+            new_user.is_staff = True
+            new_user.save()
+
+        # Log action
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Created user account '{username}' with role '{role}'."
+        )
+
+        messages.success(request, f"User account '{username}' successfully created!")
+
+    return redirect('user_management')
+
+
+@login_required(login_url='login')
+def edit_user(request, target_user_id):
+    """Edit an existing user account. Only accessible by Barangay Officials."""
+    if request.user.role != 'official':
+        messages.error(request, 'Only Barangay Officials can edit user profiles.')
+        return redirect('staff_dashboard')
+
+    target_user = get_object_or_404(User, user_id=target_user_id)
+
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        contact_number = request.POST.get('contact_number', '').strip()
+        role = request.POST.get('role', target_user.role)
+        status = request.POST.get('status', target_user.status)
+        password = request.POST.get('password', '').strip()
+
+        if not email or not first_name or not last_name:
+            messages.error(request, 'First name, last name, and email are required.')
+            return redirect('user_management')
+
+        # Check if email is taken by another user
+        if User.objects.filter(email=email).exclude(user_id=target_user_id).exists():
+            messages.error(request, f"The email '{email}' is already in use by another account.")
+            return redirect('user_management')
+
+        # Update details
+        target_user.first_name = first_name
+        target_user.last_name = last_name
+        target_user.email = email
+        target_user.contact_number = contact_number
+        target_user.role = role
+        target_user.status = status
+
+        if role in ('staff', 'official'):
+            target_user.is_staff = True
+        else:
+            target_user.is_staff = False
+
+        if password:
+            target_user.set_password(password)
+
+        target_user.save()
+
+        # Log action
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Modified user account details for '{target_user.username}'."
+        )
+
+        messages.success(request, f"User account '{target_user.username}' successfully updated!")
+
+    return redirect('user_management')
+

@@ -1,0 +1,382 @@
+{% extends "app_base.html" %}
+
+{% block title %}User Management — Barangay Connect{% endblock %}
+
+{% block sidebar_subtitle %}Staff Portal{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'staff_dashboard' %}" class="sidebar-link" data-target="dashboard">
+  <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Dashboard
+</a>
+<a href="{% url 'official_reports' %}" class="sidebar-link" data-target="admin">
+  <i data-lucide="bar-chart-2" class="h-4 w-4"></i> Reports / Admin
+</a>
+<a href="{% url 'user_management' %}" class="sidebar-link active" data-target="users">
+  <i data-lucide="users" class="h-4 w-4"></i> User Management
+</a>
+{% endblock %}
+
+{% block user_role_label %}{{ user.get_role_display }}{% endblock %}
+{% block header_title %}User Management{% endblock %}
+
+{% block header_actions %}
+<button onclick="openAddModal()" class="btn-primary py-1 px-3 text-xs flex items-center gap-1.5 print:hidden">
+  <i data-lucide="plus" class="h-3.5 w-3.5"></i> Add User
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="w-full p-8">
+  <!-- Toast Messages -->
+  {% if messages %}
+  <div class="mb-6 space-y-2">
+    {% for message in messages %}
+    <div class="rounded-sm border p-3 text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-200
+      {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-700
+      {% elif message.tags == 'success' %}border-green-200 bg-green-50 text-green-700
+      {% else %}border-blue-200 bg-blue-50 text-blue-700{% endif %}">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- KPI SUMMARY CARDS -->
+  <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <!-- Card 1: Total Accounts -->
+    <div class="rounded-sm border border-border bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-mono uppercase tracking-wider text-ink-muted">Total Accounts</span>
+        <div class="flex h-7 w-7 items-center justify-center rounded-sm bg-slate-100 text-ink">
+          <i data-lucide="users" class="h-4 w-4"></i>
+        </div>
+      </div>
+      <p class="mt-3 font-serif text-3xl font-bold text-ink">{{ total_users }}</p>
+      <p class="mt-1 text-[10px] text-ink-muted">Registered in database</p>
+    </div>
+
+    <!-- Card 2: Barangay Officials -->
+    <div class="rounded-sm border border-border bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-mono uppercase tracking-wider text-ink-muted">Officials</span>
+        <div class="flex h-7 w-7 items-center justify-center rounded-sm bg-purple-50 text-purple-600">
+          <i data-lucide="crown" class="h-4 w-4"></i>
+        </div>
+      </div>
+      <p class="mt-3 font-serif text-3xl font-bold text-ink">{{ officials_count }}</p>
+      <p class="mt-1 text-[10px] text-purple-600 font-semibold">Brgy Council Executives</p>
+    </div>
+
+    <!-- Card 3: Barangay Staff -->
+    <div class="rounded-sm border border-border bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-mono uppercase tracking-wider text-ink-muted">Barangay Staff</span>
+        <div class="flex h-7 w-7 items-center justify-center rounded-sm bg-blue-50 text-blue-600">
+          <i data-lucide="shield" class="h-4 w-4"></i>
+        </div>
+      </div>
+      <p class="mt-3 font-serif text-3xl font-bold text-ink">{{ staff_count }}</p>
+      <p class="mt-1 text-[10px] text-blue-600 font-semibold">Desk Officers & Tanods</p>
+    </div>
+
+    <!-- Card 4: Residents -->
+    <div class="rounded-sm border border-border bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-mono uppercase tracking-wider text-ink-muted">Residents</span>
+        <div class="flex h-7 w-7 items-center justify-center rounded-sm bg-lime-dim text-lime-dim-foreground">
+          <i data-lucide="user" class="h-4 w-4"></i>
+        </div>
+      </div>
+      <p class="mt-3 font-serif text-3xl font-bold text-ink">{{ residents_count }}</p>
+      <p class="mt-1 text-[10px] text-ink-muted">Community members</p>
+    </div>
+  </div>
+
+  <!-- USERS REGISTRY TABLE -->
+  <div class="rounded-sm border border-border bg-white shadow-sm">
+    <div class="border-b border-border px-6 py-4">
+      <h2 class="font-serif text-lg font-semibold text-ink">Registry of Accounts</h2>
+      <p class="text-xs text-ink-muted">View, search, and update system role levels and account states.</p>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-border bg-[#fafaf8] text-[10px] font-mono uppercase tracking-wider text-ink-muted">
+            <th class="px-6 py-3 font-medium">User Profile</th>
+            <th class="px-6 py-3 font-medium">Role Level</th>
+            <th class="px-6 py-3 font-medium">Account Status</th>
+            <th class="px-6 py-3 font-medium">Contact Number</th>
+            <th class="px-6 py-3 font-medium">Joined Date</th>
+            <th class="px-6 py-3 font-medium text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border text-xs">
+          {% for u in users %}
+          <tr class="hover:bg-slate-50/50 transition-colors">
+            <!-- User Profile -->
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center gap-3">
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-[#ecebe5] font-mono text-xs font-bold text-ink">
+                  {{ u.first_name|make_list|first|default:"U" }}{{ u.last_name|make_list|first|default:"" }}
+                </div>
+                <div>
+                  <div class="font-medium text-ink">{{ u.get_full_name|default:u.username }}</div>
+                  <div class="text-[10px] text-ink-light flex items-center gap-1.5 mt-0.5">
+                    <i data-lucide="mail" class="h-3 w-3"></i> {{ u.email }}
+                  </div>
+                </div>
+              </div>
+            </td>
+            
+            <!-- Role Level -->
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider
+                {% if u.role == 'official' %}bg-purple-50 text-purple-700 border border-purple-200
+                {% elif u.role == 'staff' %}bg-blue-50 text-blue-700 border border-blue-200
+                {% else %}bg-slate-50 text-ink-muted border border-slate-200{% endif %}">
+                {{ u.get_role_display }}
+              </span>
+            </td>
+
+            <!-- Status -->
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider border
+                {% if u.status == 'active' %}bg-slate-100 text-slate-700 border-slate-200
+                {% else %}bg-red-50 text-red-700 border-red-200{% endif %}">
+                {% if u.status == 'active' %}Active{% else %}Inactive{% endif %}
+              </span>
+            </td>
+
+            <!-- Contact Number -->
+            <td class="px-6 py-4 whitespace-nowrap text-ink-muted">
+              {% if u.contact_number %}
+              <div class="flex items-center gap-1.5">
+                <i data-lucide="phone" class="h-3.5 w-3.5 text-ink-light"></i>
+                <span>{{ u.contact_number }}</span>
+              </div>
+              {% else %}
+              <span class="text-ink-light italic">None</span>
+              {% endif %}
+            </td>
+
+            <!-- Joined Date -->
+            <td class="px-6 py-4 whitespace-nowrap text-ink-muted font-mono text-[10px]">
+              {{ u.created_at|date:"Y-m-d H:i" }}
+            </td>
+
+            <!-- Actions -->
+            <td class="px-6 py-4 whitespace-nowrap text-right text-navy font-medium">
+              {% if u.user_id == user.user_id %}
+              <span class="text-ink-light text-[10px] italic">Current Account</span>
+              {% else %}
+              <button type="button" 
+                onclick="openEditModal('{{ u.user_id }}', '{{ u.username|escapejs }}', '{{ u.first_name|escapejs }}', '{{ u.last_name|escapejs }}', '{{ u.email|escapejs }}', '{{ u.contact_number|escapejs }}', '{{ u.role|escapejs }}', '{{ u.status|escapejs }}')" 
+                class="inline-flex items-center gap-1 text-xs text-navy font-semibold hover:underline">
+                <i data-lucide="pencil" class="h-3.5 w-3.5"></i> Edit Profile
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- ADD USER MODAL -->
+<div id="add-user-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4">
+  <div class="w-full max-w-md rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150">
+    <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
+      <h3 class="font-serif text-base text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="user-plus" class="h-5 w-5 text-navy"></i> Create User Account
+      </h3>
+      <button type="button" onclick="closeAddModal()" class="text-ink-light hover:text-ink">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+
+    <form method="POST" action="{% url 'add_user' %}" class="space-y-4">
+      {% csrf_token %}
+      
+      <!-- Username -->
+      <div>
+        <label class="form-label mb-1.5 text-[10px]">Username</label>
+        <input type="text" name="username" class="form-input w-full py-1.5 px-3 text-xs" placeholder="e.g. maria.reyes" required>
+      </div>
+
+      <!-- First & Last Names -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">First Name</label>
+          <input type="text" name="first_name" class="form-input w-full py-1.5 px-3 text-xs" placeholder="First Name" required>
+        </div>
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Last Name</label>
+          <input type="text" name="last_name" class="form-input w-full py-1.5 px-3 text-xs" placeholder="Last Name" required>
+        </div>
+      </div>
+
+      <!-- Email & Contact Number -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Email Address</label>
+          <input type="email" name="email" class="form-input w-full py-1.5 px-3 text-xs" placeholder="e.g. name@example.com" required>
+        </div>
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Contact Number</label>
+          <input type="text" name="contact_number" class="form-input w-full py-1.5 px-3 text-xs" placeholder="e.g. 09171234567">
+        </div>
+      </div>
+
+      <!-- Role & Status -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Role Designation</label>
+          <select name="role" class="form-input w-full py-1.5 px-3 text-xs">
+            <option value="resident">Resident</option>
+            <option value="staff">Barangay Staff</option>
+            <option value="official">Barangay Official</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Account Status</label>
+          <select name="status" class="form-input w-full py-1.5 px-3 text-xs">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Temporary Password -->
+      <div>
+        <label class="form-label mb-1.5 text-[10px]">Password</label>
+        <input type="password" name="password" class="form-input w-full py-1.5 px-3 text-xs" placeholder="Temporary password" required>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-border mt-5">
+        <button type="button" onclick="closeAddModal()" class="btn-ghost py-1.5 px-4 text-xs">Cancel</button>
+        <button type="submit" class="btn-primary py-1.5 px-4 text-xs">Create Account</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- EDIT USER MODAL -->
+<div id="edit-user-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4">
+  <div class="w-full max-w-md rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150">
+    <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
+      <h3 class="font-serif text-base text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="pencil" class="h-5 w-5 text-navy"></i> Edit User Account: <span id="edit-header-username" class="text-navy font-mono"></span>
+      </h3>
+      <button type="button" onclick="closeEditModal()" class="text-ink-light hover:text-ink">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+
+    <form id="edit-user-form" method="POST" class="space-y-4">
+      {% csrf_token %}
+      
+      <!-- First & Last Names -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">First Name</label>
+          <input type="text" id="edit-first-name" name="first_name" class="form-input w-full py-1.5 px-3 text-xs" required>
+        </div>
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Last Name</label>
+          <input type="text" id="edit-last-name" name="last_name" class="form-input w-full py-1.5 px-3 text-xs" required>
+        </div>
+      </div>
+
+      <!-- Email & Contact Number -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Email Address</label>
+          <input type="email" id="edit-email" name="email" class="form-input w-full py-1.5 px-3 text-xs" required>
+        </div>
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Contact Number</label>
+          <input type="text" id="edit-contact" name="contact_number" class="form-input w-full py-1.5 px-3 text-xs">
+        </div>
+      </div>
+
+      <!-- Role & Status -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Role Designation</label>
+          <select id="edit-role" name="role" class="form-input w-full py-1.5 px-3 text-xs">
+            <option value="resident">Resident</option>
+            <option value="staff">Barangay Staff</option>
+            <option value="official">Barangay Official</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label mb-1.5 text-[10px]">Account Status</label>
+          <select id="edit-status" name="status" class="form-input w-full py-1.5 px-3 text-xs">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Reset Password (optional) -->
+      <div>
+        <label class="form-label mb-1.5 text-[10px]">Reset Password</label>
+        <input type="password" name="password" class="form-input w-full py-1.5 px-3 text-xs" placeholder="Leave blank to keep current password">
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-border mt-5">
+        <button type="button" onclick="closeEditModal()" class="btn-ghost py-1.5 px-4 text-xs">Cancel</button>
+        <button type="submit" class="btn-primary py-1.5 px-4 text-xs">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function openAddModal() {
+    const modal = document.getElementById('add-user-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeAddModal() {
+    const modal = document.getElementById('add-user-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function openEditModal(userId, username, firstName, lastName, email, contact, role, status) {
+    const modal = document.getElementById('edit-user-modal');
+    
+    // Set headers
+    document.getElementById('edit-header-username').innerText = username;
+    
+    // Populate form inputs
+    document.getElementById('edit-first-name').value = firstName;
+    document.getElementById('edit-last-name').value = lastName;
+    document.getElementById('edit-email').value = email;
+    document.getElementById('edit-contact').value = contact;
+    document.getElementById('edit-role').value = role;
+    document.getElementById('edit-status').value = status;
+    
+    // Set action URL dynamically
+    document.getElementById('edit-user-form').action = "/official/users/edit/" + userId + "/";
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeEditModal() {
+    const modal = document.getElementById('edit-user-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+</script>
+{% endblock %}
