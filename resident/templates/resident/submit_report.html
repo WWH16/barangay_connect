@@ -67,7 +67,7 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label for="inc-category" class="form-label">Category</label>
-              <select id="inc-category" name="category" class="form-input">
+              <select id="inc-category" name="category" class="form-input" disabled>
                 <option value="">Select Incident Type...</option>
                 <option value="Fire Outbreak">Fire Outbreak</option>
                 <option value="Flooding / Calamity">Flooding / Calamity</option>
@@ -81,7 +81,7 @@
               <label for="inc-location" class="form-label">Location</label>
               <div class="relative">
                 <i data-lucide="map-pin" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
-                <input id="inc-location" name="location" type="text" class="form-input pl-9" placeholder="e.g. Purok 3 near elementary school">
+                <input id="inc-location" name="location" type="text" class="form-input pl-9" placeholder="e.g. Purok 3 near elementary school" disabled>
               </div>
             </div>
           </div>
@@ -143,17 +143,27 @@
       incidentFields.classList.add('hidden');
       
       compCategory.required = true;
+      compCategory.disabled = false;
       compTitle.required = true;
+      compTitle.disabled = false;
+      
       incCategory.required = false;
+      incCategory.disabled = true;
       incLocation.required = false;
+      incLocation.disabled = true;
     } else {
       complaintFields.classList.add('hidden');
       incidentFields.classList.remove('hidden');
       
       compCategory.required = false;
+      compCategory.disabled = true;
       compTitle.required = false;
+      compTitle.disabled = true;
+      
       incCategory.required = true;
+      incCategory.disabled = false;
       incLocation.required = true;
+      incLocation.disabled = false;
     }
   }
 

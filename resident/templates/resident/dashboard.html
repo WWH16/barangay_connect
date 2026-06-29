@@ -147,7 +147,37 @@
           Barangay Community Member
         </div>
       </div>
+
+      <!-- Notifications Card -->
+      <div class="mt-6 rounded-sm border border-border bg-white p-4">
+        <p class="mb-3 font-mono text-[10px] font-semibold uppercase tracking-widest text-ink-muted flex items-center gap-1.5">
+          <i data-lucide="bell" class="h-3.5 w-3.5 text-navy"></i> System Notifications
+        </p>
+        {% if notifications %}
+          <div class="space-y-3.5">
+            {% for notif in notifications %}
+              <div class="flex items-start gap-2.5 text-xs pb-3 border-b border-slate-100 last:border-b-0 last:pb-0">
+                <div class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full 
+                  {% if notif.type == 'success' %}bg-green-50 text-green-600
+                  {% elif notif.type == 'info' %}bg-blue-50 text-blue-600
+                  {% elif notif.type == 'warning' %}bg-amber-50 text-amber-600
+                  {% else %}bg-slate-50 text-ink-muted{% endif %}">
+                  <i data-lucide="{{ notif.icon }}" class="h-3 w-3"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="font-semibold text-ink text-[11px] leading-tight">{{ notif.title }}</p>
+                  <p class="text-ink-muted text-[10px] mt-0.5 leading-normal">{{ notif.message }}</p>
+                  <span class="text-[9px] text-ink-light block mt-1">{{ notif.date|date:"M d, H:i" }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-[11px] text-ink-muted text-center py-4">No new notifications.</p>
+        {% endif %}
+      </div>
     </div>
+
   </div>
 </div>
 {% endblock %}

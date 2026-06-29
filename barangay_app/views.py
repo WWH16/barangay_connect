@@ -1,64 +1,156 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib import messages
-from resident.models import Profile, Report
+from resident.models import User, Complaint, Incident, EvidenceFile, CaseAssignment, Notification, ActivityLog
+
+User = get_user_model()
 
 
 @login_required(login_url='login')
 def staff_dashboard(request):
     """Dashboard for barangay staff and officials — shows all reports from residents."""
-    profile, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'resident'})
-
-    if profile.is_resident:
+    if request.user.is_resident:
         return redirect('resident_dashboard')
 
-    if profile.is_official:
-        reports = Report.objects.all()
+    # Fetch complaints and incidents based on role
+    if request.user.role == 'official':
+        complaints_qs = Complaint.objects.all()
+        incidents_qs = Incident.objects.all()
     else:
-        reports = Report.objects.filter(assigned_to=request.user)
+        # Staff can see cases assigned to them
+        assigned_complaint_ids = CaseAssignment.objects.filter(assigned_to=request.user, case_type='complaint').values_list('case_id', flat=True)
+        assigned_incident_ids = CaseAssignment.objects.filter(assigned_to=request.user, case_type='incident').values_list('case_id', flat=True)
+        complaints_qs = Complaint.objects.filter(complaint_id__in=assigned_complaint_ids)
+        incidents_qs = Incident.objects.filter(incident_id__in=assigned_incident_ids)
+
+    # Fetch all assignments to map assigned staff
+    assignments = CaseAssignment.objects.all()
+    assignment_map = {}
+    for a in assignments:
+        assignment_map[(a.case_type, a.case_id)] = a.assigned_to
+
+    # Build unified reports list
+    reports = []
+    for c in complaints_qs:
+        evidence_file = c.evidence.first()
+        reports.append({
+            'id': c.complaint_id,
+            'title': c.title,
+            'description': c.description,
+            'status': c.status,
+            'remarks': c.remarks,
+            'report_type': 'complaint',
+            'created_at': c.date_submitted,
+            'resident': c.user,
+            'evidence': evidence_file.file_path if evidence_file else None,
+            'assigned_to': assignment_map.get(('complaint', c.complaint_id)),
+        })
+    for i in incidents_qs:
+        evidence_file = i.evidence.first()
+        reports.append({
+            'id': i.incident_id,
+            'title': f"Incident: {i.category} at {i.location}",
+            'description': i.description,
+            'status': i.status,
+            'remarks': i.remarks,
+            'report_type': 'incident',
+            'created_at': i.date_reported,
+            'resident': i.user,
+            'evidence': evidence_file.file_path if evidence_file else None,
+            'assigned_to': assignment_map.get(('incident', i.incident_id)),
+        })
+
+    reports.sort(key=lambda x: x['created_at'], reverse=True)
 
     # Get all staff members for the assignment dropdown
-    staff_members = User.objects.filter(profile__role='staff')
+    staff_members = User.objects.filter(role='staff')
 
     context = {
         'user': request.user,
-        'profile': profile,
         'reports': reports,
         'staff_members': staff_members,
-        'total_reports': reports.count(),
-        'pending_count': reports.filter(status='Pending').count(),
-        'in_progress_count': reports.filter(status='In Progress').count(),
-        'resolved_count': reports.filter(status='Resolved').count(),
+        'total_reports': len(reports),
+        'pending_count': sum(1 for r in reports if r['status'] == 'Pending'),
+        'in_progress_count': sum(1 for r in reports if r['status'] == 'In Progress'),
+        'resolved_count': sum(1 for r in reports if r['status'] == 'Resolved'),
     }
     return render(request, 'barangay_app/dashboard.html', context)
 
 
 @login_required(login_url='login')
 def assign_report(request, report_id):
-    """Assign a report to a staff member. Only officials can assign."""
-    profile, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'resident'})
-    if not profile.is_official:
+    """Assign a case (complaint or incident) to a staff member. Only officials can assign."""
+    if request.user.role != 'official':
         messages.error(request, 'Only Barangay Officials can assign reports.')
         return redirect('staff_dashboard')
 
     if request.method == 'POST':
-        report = get_object_or_404(Report, id=report_id)
+        case_type = request.POST.get('report_type')  # 'complaint' or 'incident'
         staff_id = request.POST.get('staff_id')
+
+        if case_type == 'complaint':
+            case_obj = get_object_or_404(Complaint, complaint_id=report_id)
+            resident_user = case_obj.user
+        else:
+            case_obj = get_object_or_404(Incident, incident_id=report_id)
+            resident_user = case_obj.user
+
         if staff_id:
             try:
-                staff_user = User.objects.get(id=staff_id, profile__role='staff')
-                report.assigned_to = staff_user
-                if report.status == 'Pending':
-                    report.status = 'In Progress'
-                report.save()
-                messages.success(request, f'Report assigned to {staff_user.get_full_name() or staff_user.username}.')
+                staff_user = User.objects.get(user_id=staff_id, role='staff')
+                
+                # Create or update assignment
+                CaseAssignment.objects.update_or_create(
+                    case_type=case_type,
+                    case_id=report_id,
+                    defaults={
+                        'assigned_to': staff_user,
+                        'assigned_by': request.user,
+                        'status': 'In Progress'
+                    }
+                )
+                
+                # Update case status
+                case_obj.status = 'In Progress'
+                case_obj.save()
+                
+                # Notify resident and staff
+                Notification.objects.create(
+                    user=resident_user,
+                    message=f"Your {case_type} (ID: #{report_id}) has been assigned to staff member {staff_user.get_full_name() or staff_user.username}."
+                )
+                Notification.objects.create(
+                    user=staff_user,
+                    message=f"You have been assigned to investigate {case_type} (ID: #{report_id}) by {request.user.get_full_name() or request.user.username}."
+                )
+                
+                # Log activity
+                ActivityLog.objects.create(
+                    user=request.user,
+                    action=f"Assigned {case_type} #{report_id} to staff {staff_user.username}"
+                )
+                
+                messages.success(request, f'Case assigned to {staff_user.get_full_name() or staff_user.username}.')
             except User.DoesNotExist:
                 messages.error(request, 'Selected staff member not found.')
         else:
-            report.assigned_to = None
-            report.save()
-            messages.success(request, 'Report unassigned.')
+            # Delete assignment
+            CaseAssignment.objects.filter(case_type=case_type, case_id=report_id).delete()
+            case_obj.status = 'Pending'
+            case_obj.save()
+            
+            # Notify resident
+            Notification.objects.create(
+                user=resident_user,
+                message=f"Your {case_type} (ID: #{report_id}) is now unassigned."
+            )
+            # Log activity
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Unassigned {case_type} #{report_id}"
+            )
+            messages.success(request, 'Case unassigned.')
 
     return redirect('staff_dashboard')
 
@@ -66,23 +158,47 @@ def assign_report(request, report_id):
 @login_required(login_url='login')
 def update_report_status(request, report_id):
     """Update report status. Staff can only update reports assigned to them or if they are officials."""
-    profile, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'resident'})
-    if not profile.is_staff_or_official:
+    if not request.user.is_staff_or_official:
         messages.error(request, 'Access denied.')
         return redirect('resident_dashboard')
 
     if request.method == 'POST':
-        report = get_object_or_404(Report, id=report_id)
-        # Security check: if staff (but not official), must be assigned to them
-        if profile.is_staff and report.assigned_to != request.user:
-            messages.error(request, 'You can only update reports assigned to you.')
-            return redirect('staff_dashboard')
-
+        case_type = request.POST.get('report_type')  # 'complaint' or 'incident'
         new_status = request.POST.get('status')
+        
+        if case_type == 'complaint':
+            case_obj = get_object_or_404(Complaint, complaint_id=report_id)
+            resident_user = case_obj.user
+        else:
+            case_obj = get_object_or_404(Incident, incident_id=report_id)
+            resident_user = case_obj.user
+
+        # Security check: if staff (but not official), must be assigned
+        if request.user.role == 'staff':
+            is_assigned = CaseAssignment.objects.filter(case_type=case_type, case_id=report_id, assigned_to=request.user).exists()
+            if not is_assigned:
+                messages.error(request, 'You can only update cases assigned to you.')
+                return redirect('staff_dashboard')
+
         if new_status in ['Pending', 'In Progress', 'Resolved']:
-            report.status = new_status
-            report.save()
-            messages.success(request, f'Report status updated to {new_status}.')
+            case_obj.status = new_status
+            case_obj.save()
+            
+            # Update assignment status if exists
+            CaseAssignment.objects.filter(case_type=case_type, case_id=report_id).update(status=new_status)
+            
+            # Notify resident
+            Notification.objects.create(
+                user=resident_user,
+                message=f"Your {case_type} (ID: #{report_id}) status has been updated to '{new_status}'."
+            )
+            # Log activity
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Updated status of {case_type} #{report_id} to {new_status}"
+            )
+            
+            messages.success(request, f'Status updated to {new_status}.')
         else:
             messages.error(request, 'Invalid status choice.')
 
@@ -91,66 +207,88 @@ def update_report_status(request, report_id):
 
 @login_required(login_url='login')
 def update_report_remarks(request, report_id):
-    """Update report remarks, updates, or decisions. Staff can only update reports assigned to them or if they are officials."""
-    profile, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'resident'})
-    if not profile.is_staff_or_official:
+    """Update case remarks. Staff can only update reports assigned to them or if they are officials."""
+    if not request.user.is_staff_or_official:
         messages.error(request, 'Access denied.')
         return redirect('resident_dashboard')
 
     if request.method == 'POST':
-        report = get_object_or_404(Report, id=report_id)
-        # Security check: if staff (but not official), must be assigned to them
-        if profile.is_staff and report.assigned_to != request.user:
-            messages.error(request, 'You can only update reports assigned to you.')
-            return redirect('staff_dashboard')
-
+        case_type = request.POST.get('report_type')  # 'complaint' or 'incident'
         new_remarks = request.POST.get('remarks', '').strip()
-        report.remarks = new_remarks
-        report.save()
-        messages.success(request, 'Report remarks updated successfully.')
+        
+        if case_type == 'complaint':
+            case_obj = get_object_or_404(Complaint, complaint_id=report_id)
+            resident_user = case_obj.user
+        else:
+            case_obj = get_object_or_404(Incident, incident_id=report_id)
+            resident_user = case_obj.user
+
+        # Security check: if staff (but not official), must be assigned
+        if request.user.role == 'staff':
+            is_assigned = CaseAssignment.objects.filter(case_type=case_type, case_id=report_id, assigned_to=request.user).exists()
+            if not is_assigned:
+                messages.error(request, 'You can only update cases assigned to you.')
+                return redirect('staff_dashboard')
+
+        case_obj.remarks = new_remarks
+        case_obj.save()
+        
+        # Notify resident
+        Notification.objects.create(
+            user=resident_user,
+            message=f"Official update added to your {case_type} (ID: #{report_id}): \"{new_remarks}\""
+        )
+        # Log activity
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Added case remarks to {case_type} #{report_id}"
+        )
+        
+        messages.success(request, 'Remarks updated successfully.')
 
     return redirect('staff_dashboard')
 
 
 @login_required(login_url='login')
-
 def official_reports(request):
     """Analytics and report generation screen for Barangay Officials."""
-    profile, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'resident'})
-    if not profile.is_official:
+    if request.user.role != 'official':
         messages.error(request, 'Only Barangay Officials can access the Reports / Admin screen.')
         return redirect('staff_dashboard')
 
-    reports = Report.objects.all()
+    complaints = Complaint.objects.all()
+    incidents = Incident.objects.all()
 
     # Calculate statistics
-    total_count = reports.count()
-    complaints_count = reports.filter(report_type='complaint').count()
-    incidents_count = reports.filter(report_type='incident').count()
+    total_count = complaints.count() + incidents.count()
+    complaints_count = complaints.count()
+    incidents_count = incidents.count()
     
-    pending_count = reports.filter(status='Pending').count()
-    in_progress_count = reports.filter(status='In Progress').count()
-    resolved_count = reports.filter(status='Resolved').count()
+    pending_count = complaints.filter(status='Pending').count() + incidents.filter(status='Pending').count()
+    in_progress_count = complaints.filter(status='In Progress').count() + incidents.filter(status='In Progress').count()
+    resolved_count = complaints.filter(status='Resolved').count() + incidents.filter(status='Resolved').count()
 
     # Complaints Breakdown
-    pending_complaints = reports.filter(report_type='complaint', status='Pending').count()
-    in_progress_complaints = reports.filter(report_type='complaint', status='In Progress').count()
-    resolved_complaints = reports.filter(report_type='complaint', status='Resolved').count()
+    pending_complaints = complaints.filter(status='Pending').count()
+    in_progress_complaints = complaints.filter(status='In Progress').count()
+    resolved_complaints = complaints.filter(status='Resolved').count()
     complaint_resolution_rate = int((resolved_complaints / complaints_count * 100)) if complaints_count > 0 else 0
 
     # Incidents Breakdown
-    pending_incidents = reports.filter(report_type='incident', status='Pending').count()
-    in_progress_incidents = reports.filter(report_type='incident', status='In Progress').count()
-    resolved_incidents = reports.filter(report_type='incident', status='Resolved').count()
+    pending_incidents = incidents.filter(status='Pending').count()
+    in_progress_incidents = incidents.filter(status='In Progress').count()
+    resolved_incidents = incidents.filter(status='Resolved').count()
     incident_resolution_rate = int((resolved_incidents / incidents_count * 100)) if incidents_count > 0 else 0
 
     # Overall Resolution Rate
     total_resolution_rate = int((resolved_count / total_count * 100)) if total_count > 0 else 0
 
-    # Category breakdowns
+    # Category breakdowns (merged)
     categories = {}
-    for r in reports:
-        categories[r.category] = categories.get(r.category, 0) + 1
+    for c in complaints:
+        categories[c.category] = categories.get(c.category, 0) + 1
+    for i in incidents:
+        categories[i.category] = categories.get(i.category, 0) + 1
         
     category_list = [{'name': k, 'count': v} for k, v in categories.items()]
 
@@ -179,24 +317,59 @@ def official_reports(request):
             'incidents': 0
         }
 
-    for r in reports:
-        local_created_at = timezone.localtime(r.created_at)
+    for c in complaints:
+        local_created_at = timezone.localtime(c.date_submitted)
         r_month_key = local_created_at.strftime('%Y-%m')
         if r_month_key in months_data:
             months_data[r_month_key]['total'] += 1
-            if r.report_type == 'complaint':
-                months_data[r_month_key]['complaints'] += 1
-            elif r.report_type == 'incident':
-                months_data[r_month_key]['incidents'] += 1
+            months_data[r_month_key]['complaints'] += 1
+
+    for i in incidents:
+        local_created_at = timezone.localtime(i.date_reported)
+        r_month_key = local_created_at.strftime('%Y-%m')
+        if r_month_key in months_data:
+            months_data[r_month_key]['total'] += 1
+            months_data[r_month_key]['incidents'] += 1
 
     trend_labels = [m['label'] for m in months_data.values()]
     trend_totals = [m['total'] for m in months_data.values()]
     trend_complaints = [m['complaints'] for m in months_data.values()]
     trend_incidents = [m['incidents'] for m in months_data.values()]
 
+    # Registry of concerns table
+    reports = []
+    for c in complaints:
+        evidence_file = c.evidence.first()
+        reports.append({
+            'id': c.complaint_id,
+            'title': c.title,
+            'description': c.description,
+            'status': c.status,
+            'remarks': c.remarks,
+            'report_type': 'complaint',
+            'created_at': c.date_submitted,
+            'resident': c.user,
+            'evidence': evidence_file.file_path if evidence_file else None,
+        })
+    for i in incidents:
+        evidence_file = i.evidence.first()
+        reports.append({
+            'id': i.incident_id,
+            'title': f"Incident: {i.category} at {i.location}",
+            'description': i.description,
+            'status': i.status,
+            'remarks': i.remarks,
+            'report_type': 'incident',
+            'created_at': i.date_reported,
+            'resident': i.user,
+            'evidence': evidence_file.file_path if evidence_file else None,
+            'location': i.location,
+        })
+        
+    reports.sort(key=lambda x: x['created_at'], reverse=True)
+
     context = {
         'user': request.user,
-        'profile': profile,
         'reports': reports,
         'total_count': total_count,
         'complaints_count': complaints_count,
@@ -220,4 +393,3 @@ def official_reports(request):
         'trend_incidents': trend_incidents,
     }
     return render(request, 'barangay_app/official_reports.html', context)
-

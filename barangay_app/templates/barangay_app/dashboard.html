@@ -8,14 +8,14 @@
 <a href="{% url 'staff_dashboard' %}" class="sidebar-link active" data-target="dashboard">
   <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Dashboard
 </a>
-{% if profile.is_official %}
+{% if user.is_official %}
 <a href="{% url 'official_reports' %}" class="sidebar-link" data-target="admin">
   <i data-lucide="bar-chart-2" class="h-4 w-4"></i> Reports / Admin
 </a>
 {% endif %}
 {% endblock %}
 
-{% block user_role_label %}{{ profile.get_role_display }}{% endblock %}
+{% block user_role_label %}{{ user.get_role_display }}{% endblock %}
 {% block header_title %}Staff Dashboard{% endblock %}
 
 {% block content %}
@@ -98,21 +98,22 @@
             </td>
             <td class="px-5 py-3 text-ink-muted whitespace-nowrap">
               <div class="font-medium text-slate-800">{{ report.resident.get_full_name|default:report.resident.username }}</div>
-              {% if report.resident.profile.contact_number %}
+              {% if report.resident.contact_number %}
               <div class="text-[11px] text-ink-muted flex items-center gap-1 mt-0.5">
-                <i data-lucide="phone" class="h-3 w-3"></i> {{ report.resident.profile.contact_number }}
+                <i data-lucide="phone" class="h-3 w-3"></i> {{ report.resident.contact_number }}
               </div>
               {% endif %}
             </td>
             <td class="px-5 py-3 text-ink-muted whitespace-nowrap">{{ report.created_at|date:"M d, Y" }}</td>
             <td class="px-5 py-3">
-              {% if profile.is_official %}
+              {% if user.is_official %}
                 <form method="POST" action="{% url 'assign_report' report.id %}" class="inline-block">
                   {% csrf_token %}
+                  <input type="hidden" name="report_type" value="{{ report.report_type }}">
                   <select name="staff_id" onchange="this.form.submit()" class="rounded-sm border border-border bg-white px-2 py-1 text-xs text-ink outline-none focus:border-navy">
                     <option value="">Unassigned</option>
                     {% for staff in staff_members %}
-                      <option value="{{ staff.id }}" {% if report.assigned_to == staff %}selected{% endif %}>
+                      <option value="{{ staff.user_id }}" {% if report.assigned_to == staff %}selected{% endif %}>
                         {{ staff.get_full_name|default:staff.username }}
                       </option>
                     {% endfor %}
@@ -134,7 +135,7 @@
                   <i data-lucide="message-square-text" class="h-4 w-4"></i> View Remarks
                 </button>
               {% else %}
-                {% if profile.is_official or report.assigned_to == user %}
+                {% if user.is_official or report.assigned_to == user %}
                   <button type="button" onclick="openRemarksModal({{ report.id }})" class="inline-flex items-center gap-1.5 text-xs text-ink-light hover:text-navy font-medium">
                     <i data-lucide="message-square-plus" class="h-4 w-4"></i> Add Remarks
                   </button>
@@ -161,8 +162,9 @@
 
                   <form method="POST" action="{% url 'update_report_remarks' report.id %}">
                     {% csrf_token %}
+                    <input type="hidden" name="report_type" value="{{ report.report_type }}">
                     <label class="form-label mb-1.5 text-[10px]">Remarks / Updates</label>
-                    {% if profile.is_official or report.assigned_to == user %}
+                    {% if user.is_official or report.assigned_to == user %}
                       <textarea name="remarks" rows="4" placeholder="Add detailed investigation updates, case remarks, or official decisions here..." class="form-input w-full p-2 text-xs focus:border-navy mb-4 bg-white">{{ report.remarks }}</textarea>
                       <div class="flex justify-end gap-2 pt-2 border-t border-border">
                         <button type="button" onclick="closeRemarksModal({{ report.id }})" class="btn-ghost py-1.5 px-4 text-xs">Cancel</button>
@@ -181,9 +183,10 @@
               </div>
             </td>
             <td class="px-5 py-3 whitespace-nowrap">
-              {% if profile.is_official or report.assigned_to == user %}
+              {% if user.is_official or report.assigned_to == user %}
                 <form method="POST" action="{% url 'update_report_status' report.id %}" class="inline-block">
                   {% csrf_token %}
+                  <input type="hidden" name="report_type" value="{{ report.report_type }}">
                   <select name="status" onchange="this.form.submit()" class="rounded-sm border border-border bg-white px-2 py-1 text-xs font-semibold outline-none focus:border-navy
                     {% if report.status == 'Pending' %}text-amber-600 border-amber-200
                     {% elif report.status == 'In Progress' %}text-blue-700 border-blue-200

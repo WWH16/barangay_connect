@@ -13,7 +13,7 @@
 </a>
 {% endblock %}
 
-{% block user_role_label %}{{ profile.get_role_display }}{% endblock %}
+{% block user_role_label %}{{ user.get_role_display }}{% endblock %}
 {% block header_title %}Reports & Analytics{% endblock %}
 
 {% block header_actions %}
@@ -213,7 +213,7 @@
 
               <td class="px-4 py-2.5 whitespace-nowrap">
                 <div>{{ report.resident.get_full_name|default:report.resident.username }}</div>
-                <div class="text-[10px] text-ink-light">{{ report.resident.profile.contact_number }}</div>
+                <div class="text-[10px] text-ink-light">{{ report.resident.contact_number }}</div>
               </td>
               <td class="px-4 py-2.5">
                 <span class="status-badge {% if report.status == 'Pending' %}status-pending{% elif report.status == 'In Progress' %}status-in-progress{% else %}status-resolved{% endif %}">{{ report.status }}</span>

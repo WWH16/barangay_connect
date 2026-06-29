@@ -120,6 +120,8 @@ STATIC_URL = 'static/'
 
 # Auth
 LOGIN_URL = 'login'
+AUTH_USER_MODEL = 'resident.User'
+
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
