@@ -113,6 +113,8 @@ def resident_dashboard(request):
             'report_type': 'complaint',
             'created_at': c.date_submitted,
             'category': c.category,
+            'latitude': c.latitude,
+            'longitude': c.longitude,
             'evidence': evidence_file.file_path if evidence_file else None,
         })
     for i in incidents:
@@ -127,6 +129,8 @@ def resident_dashboard(request):
             'created_at': i.date_reported,
             'category': i.category,
             'location': i.location,
+            'latitude': i.latitude,
+            'longitude': i.longitude,
             'evidence': evidence_file.file_path if evidence_file else None,
         })
         
@@ -193,13 +197,17 @@ def submit_report(request):
 
         if report_type == 'complaint':
             title = request.POST.get('title', '').strip()
+            latitude = request.POST.get('latitude')
+            longitude = request.POST.get('longitude')
             
             if title and category and description:
                 complaint = Complaint.objects.create(
                     user=request.user,
                     category=category,
                     title=title,
-                    description=description
+                    description=description,
+                    latitude=float(latitude) if latitude else None,
+                    longitude=float(longitude) if longitude else None
                 )
                 
                 if evidence:
@@ -210,11 +218,6 @@ def submit_report(request):
                         file_type=file_type
                     )
                 
-                # Add notification
-                Notification.objects.create(
-                    user=request.user,
-                    message=f"Your complaint '{title}' (ID: #{complaint.complaint_id}) has been successfully submitted."
-                )
                 # Log activity
                 ActivityLog.objects.create(
                     user=request.user,
@@ -222,30 +225,23 @@ def submit_report(request):
                 )
                 
                 messages.success(request, 'Complaint submitted successfully!')
-                # Send resident email notification
-                send_resident_notification(
-                    to_email=request.user.email,
-                    subject=f'Your complaint "{title}" has been submitted',
-                    template_name='notification.html',
-                    context={
-                        'subject': f'Your complaint "{title}" has been submitted',
-                        'recipient_name': request.user.get_full_name() or request.user.username,
-                        'message_body': f'Your complaint "{title}" (ID: #{complaint.complaint_id}) has been successfully submitted. We will process it shortly.',
-                    }
-                )
                 return redirect('resident_dashboard')
             else:
                 messages.error(request, 'Please fill in all required fields.')
 
         elif report_type == 'incident':
             location = request.POST.get('location', '').strip()
+            latitude = request.POST.get('latitude')
+            longitude = request.POST.get('longitude')
             
             if category and location and description:
                 incident = Incident.objects.create(
                     user=request.user,
                     category=category,
                     location=location,
-                    description=description
+                    description=description,
+                    latitude=float(latitude) if latitude else None,
+                    longitude=float(longitude) if longitude else None
                 )
                 
                 if evidence:
@@ -256,11 +252,6 @@ def submit_report(request):
                         file_type=file_type
                     )
                 
-                # Add notification
-                Notification.objects.create(
-                    user=request.user,
-                    message=f"Your incident report for '{category}' at {location} (ID: #{incident.incident_id}) has been successfully filed."
-                )
                 # Log activity
                 ActivityLog.objects.create(
                     user=request.user,
@@ -268,17 +259,6 @@ def submit_report(request):
                 )
                 
                 messages.success(request, 'Incident reported successfully!')
-                # Send resident email notification
-                send_resident_notification(
-                    to_email=request.user.email,
-                    subject=f'Your incident report "{category}" has been submitted',
-                    template_name='notification.html',
-                    context={
-                        'subject': f'Your incident report "{category}" has been submitted',
-                        'recipient_name': request.user.get_full_name() or request.user.username,
-                        'message_body': f'Your incident report "{category}" (ID: #{incident.incident_id}) has been successfully filed. We will process it shortly.',
-                    }
-                )
                 return redirect('resident_dashboard')
             else:
                 messages.error(request, 'Please fill in all required fields.')

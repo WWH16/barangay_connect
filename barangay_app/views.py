@@ -45,6 +45,8 @@ def staff_dashboard(request):
             'report_type': 'complaint',
             'created_at': c.date_submitted,
             'resident': c.user,
+            'latitude': c.latitude,
+            'longitude': c.longitude,
             'evidence': evidence_file.file_path if evidence_file else None,
             'assigned_to': assignment_map.get(('complaint', c.complaint_id)),
         })
@@ -59,6 +61,9 @@ def staff_dashboard(request):
             'report_type': 'incident',
             'created_at': i.date_reported,
             'resident': i.user,
+            'location': i.location,
+            'latitude': i.latitude,
+            'longitude': i.longitude,
             'evidence': evidence_file.file_path if evidence_file else None,
             'assigned_to': assignment_map.get(('incident', i.incident_id)),
         })
@@ -380,6 +385,8 @@ def official_reports(request):
             'report_type': 'complaint',
             'created_at': c.date_submitted,
             'resident': c.user,
+            'latitude': c.latitude,
+            'longitude': c.longitude,
             'evidence': evidence_file.file_path if evidence_file else None,
         })
     for i in incidents:
@@ -395,6 +402,8 @@ def official_reports(request):
             'resident': i.user,
             'evidence': evidence_file.file_path if evidence_file else None,
             'location': i.location,
+            'latitude': i.latitude,
+            'longitude': i.longitude,
         })
         
     reports.sort(key=lambda x: x['created_at'], reverse=True)

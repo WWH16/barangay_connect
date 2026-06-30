@@ -52,6 +52,8 @@ class Complaint(models.Model):
     description = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
     remarks = models.TextField(blank=True, default='')
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
     date_submitted = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -76,6 +78,8 @@ class Incident(models.Model):
     description = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
     remarks = models.TextField(blank=True, default='')
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
     date_reported = models.DateTimeField(auto_now_add=True)
 
     class Meta:

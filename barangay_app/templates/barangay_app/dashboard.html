@@ -15,6 +15,8 @@
     main { padding: 0 !important; }
   }
 </style>
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 {% endblock %}
 
 {% block sidebar_nav %}
@@ -163,6 +165,11 @@
             <td class="px-5 py-3 max-w-md">
               <p class="font-medium text-ink">{{ report.title }}</p>
               <p class="mt-0.5 text-xs text-ink-muted">{{ report.description }}</p>
+              {% if report.latitude and report.longitude %}
+                <button type="button" onclick="openViewMapModal({{ report.id }}, {{ report.latitude }}, {{ report.longitude }}, '{{ report.title|escapejs }}')" class="mt-2 inline-flex items-center gap-1.5 text-[11px] text-navy font-semibold hover:underline bg-navy/5 px-2 py-1 rounded-sm border border-navy/20">
+                  <i data-lucide="map-pin" class="h-3 w-3"></i> View on Map
+                </button>
+              {% endif %}
             </td>
             <td class="px-5 py-3 text-ink-muted whitespace-nowrap">
               <div class="font-medium text-slate-800">{{ report.resident.get_full_name|default:report.resident.username }}</div>
@@ -285,10 +292,63 @@
     {% endif %}
   </div>
 </div>
+
+<!-- View Map Modal -->
+<div id="viewMapModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4">
+  <div class="w-full max-w-2xl rounded-sm border border-border bg-white p-6 shadow-xl text-left animate-in fade-in zoom-in-95 duration-150 relative">
+    <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
+      <h3 class="font-serif text-lg text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="map" class="h-5 w-5 text-navy"></i> Location Map
+      </h3>
+      <button type="button" onclick="closeViewMapModal()" class="text-ink-light hover:text-ink">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    
+    <p id="view-map-title" class="text-sm font-semibold text-ink mb-3"></p>
+    
+    <div id="view-map-container" class="h-[400px] w-full rounded-sm border border-border"></div>
+    
+    <div class="flex justify-end pt-4 mt-4 border-t border-border">
+      <button type="button" onclick="closeViewMapModal()" class="btn-primary py-1.5 px-4 text-xs">Close Map</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
+  let viewMap = null;
+  let viewMarker = null;
+
+  function openViewMapModal(id, lat, lng, title) {
+    const modal = document.getElementById('viewMapModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    document.getElementById('view-map-title').innerText = title;
+    
+    if (!viewMap) {
+      viewMap = L.map('view-map-container').setView([lat, lng], 16);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(viewMap);
+      viewMarker = L.marker([lat, lng]).addTo(viewMap);
+    } else {
+      viewMap.setView([lat, lng], 16);
+      viewMarker.setLatLng([lat, lng]);
+      setTimeout(() => viewMap.invalidateSize(), 100);
+    }
+  }
+
+  function closeViewMapModal() {
+    const modal = document.getElementById('viewMapModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
 
   function openRemarksModal(id) {
     const modal = document.getElementById('remarks-modal-' + id);

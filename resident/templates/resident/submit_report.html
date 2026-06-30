@@ -14,6 +14,11 @@
 {% block user_role_label %}Resident{% endblock %}
 {% block header_title %}Submit Report{% endblock %}
 
+{% block extra_head %}
+<!-- Leaflet CSS for Maps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-[780px] p-8">
   <div class="mb-8">
@@ -37,6 +42,8 @@
       <form method="POST" action="{% url 'submit_report' %}" enctype="multipart/form-data" class="space-y-5" data-loading-text="Submitting report and sending email notification...">
         {% csrf_token %}
         <input type="hidden" name="report_type" id="report_type_input" value="complaint">
+        <input type="hidden" name="latitude" id="form-lat" value="">
+        <input type="hidden" name="longitude" id="form-lng" value="">
 
         <!-- COMPLAINT FIELDS -->
         <div id="complaint-fields" class="space-y-5">
@@ -60,6 +67,15 @@
               </div>
             </div>
           </div>
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="form-label mb-0">Location (Optional Pinpoint)</label>
+              <button type="button" onclick="openMapModal()" class="text-xs text-navy hover:underline flex items-center gap-1 font-medium">
+                <i data-lucide="map" class="h-3.5 w-3.5"></i> Pin on Map
+              </button>
+            </div>
+            <p id="comp-coord-display" class="text-xs text-ink-muted hidden">Pinned Coordinates: <span class="font-mono text-navy font-semibold" id="comp-coords"></span></p>
+          </div>
         </div>
 
         <!-- INCIDENT FIELDS (Hidden by default) -->
@@ -78,11 +94,17 @@
               </select>
             </div>
             <div>
-              <label for="inc-location" class="form-label">Location</label>
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="inc-location" class="form-label mb-0">Location Description</label>
+                <button type="button" onclick="openMapModal()" class="text-xs text-navy hover:underline flex items-center gap-1 font-medium">
+                  <i data-lucide="map" class="h-3.5 w-3.5"></i> Pin on Map
+                </button>
+              </div>
               <div class="relative">
                 <i data-lucide="map-pin" class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
                 <input id="inc-location" name="location" type="text" class="form-input pl-9" placeholder="e.g. Purok 3 near elementary school" disabled>
               </div>
+              <p id="inc-coord-display" class="text-[11px] text-ink-muted hidden mt-1">Coordinates: <span class="font-mono text-navy font-semibold" id="inc-coords"></span></p>
             </div>
           </div>
         </div>
@@ -118,6 +140,32 @@
           <a href="{% url 'resident_dashboard' %}" class="btn-ghost">Cancel</a>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Map Modal -->
+<div id="mapModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-ink/50 backdrop-blur-sm" onclick="closeMapModal()"></div>
+  <div class="absolute left-1/2 top-1/2 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-sm bg-white p-5 shadow-xl md:p-6">
+    <div class="mb-4 flex items-center justify-between">
+      <h2 class="font-serif text-xl text-ink">Pinpoint Location</h2>
+      <button type="button" onclick="closeMapModal()" class="text-ink-light hover:text-ink transition-colors">
+        <i data-lucide="x" class="h-5 w-5"></i>
+      </button>
+    </div>
+    
+    <p class="text-sm text-ink-muted mb-4">Drag the marker or click on the map to accurately pinpoint the location of the report.</p>
+    
+    <div id="picker-map" class="h-[350px] w-full rounded-sm border border-border"></div>
+    
+    <div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 bg-sand/30 p-3 rounded-sm border border-border">
+      <div class="text-xs text-ink-muted">
+        Selected: <span id="modal-latlng-display" class="font-mono font-medium text-navy">None</span>
+      </div>
+      <button type="button" onclick="saveLocation()" class="btn-primary py-1.5 px-4 text-xs w-full sm:w-auto">
+        Confirm Location
+      </button>
     </div>
   </div>
 </div>
@@ -219,6 +267,99 @@
     fileNameText.innerText = name;
     fileNameDiv.classList.remove('hidden');
     lucide.createIcons();
+  }
+</script>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+  let map;
+  let marker;
+  let selectedLatLng = null;
+
+  function initMap() {
+    if (map) return; // already initialized
+    
+    // Default to a central location in the Philippines, can be adjusted
+    const defaultLoc = [14.5995, 120.9842]; // Manila
+    
+    map = L.map('picker-map').setView(defaultLoc, 13);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Default marker
+    marker = L.marker(defaultLoc, {draggable: true}).addTo(map);
+
+    // Update marker on click
+    map.on('click', function(e) {
+      marker.setLatLng(e.latlng);
+      updateLatLngDisplay(e.latlng);
+    });
+
+    // Update coordinates when marker is dragged
+    marker.on('dragend', function(e) {
+      updateLatLngDisplay(marker.getLatLng());
+    });
+
+    // Attempt to get user's actual location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLoc = [position.coords.latitude, position.coords.longitude];
+          map.setView(userLoc, 16);
+          marker.setLatLng(userLoc);
+          updateLatLngDisplay(L.latLng(userLoc[0], userLoc[1]));
+        },
+        () => {
+          updateLatLngDisplay(L.latLng(defaultLoc[0], defaultLoc[1]));
+        }
+      );
+    } else {
+      updateLatLngDisplay(L.latLng(defaultLoc[0], defaultLoc[1]));
+    }
+  }
+
+  function updateLatLngDisplay(latlng) {
+    selectedLatLng = latlng;
+    document.getElementById('modal-latlng-display').innerText = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
+  }
+
+  function openMapModal() {
+    document.getElementById('mapModal').classList.remove('hidden');
+    // Leaflet needs to invalidate size when container becomes visible
+    if (!map) {
+      initMap();
+    } else {
+      setTimeout(() => map.invalidateSize(), 100);
+    }
+  }
+
+  function closeMapModal() {
+    document.getElementById('mapModal').classList.add('hidden');
+  }
+
+  function saveLocation() {
+    if (selectedLatLng) {
+      const lat = selectedLatLng.lat.toFixed(6);
+      const lng = selectedLatLng.lng.toFixed(6);
+      
+      // Save to hidden form inputs
+      document.getElementById('form-lat').value = lat;
+      document.getElementById('form-lng').value = lng;
+      
+      // Update displays
+      const coordStr = `${lat}, ${lng}`;
+      
+      document.getElementById('comp-coords').innerText = coordStr;
+      document.getElementById('comp-coord-display').classList.remove('hidden');
+      
+      document.getElementById('inc-coords').innerText = coordStr;
+      document.getElementById('inc-coord-display').classList.remove('hidden');
+    }
+    closeMapModal();
   }
 </script>
 {% endblock %}
