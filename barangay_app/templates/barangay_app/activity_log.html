@@ -65,7 +65,7 @@
               data-fullname="{{ log.user.get_full_name|lower }}"
               data-action="{{ log.action|lower }}">
             <td class="px-5 py-3.5 font-mono text-xs text-navy font-semibold">#{{ log.log_id }}</td>
-            <td class="px-5 py-3.5 font-mono text-xs text-ink-muted">USR_{{ log.user.user_id }}</td>
+            <td class="px-5 py-3.5 font-mono text-xs text-ink-muted">{{ log.user.user_id }}</td>
             <td class="px-5 py-3.5 whitespace-nowrap">
               <div class="font-semibold text-ink">{{ log.user.get_full_name|default:log.user.username }}</div>
               <div class="text-[10px] text-ink-muted font-mono">{{ log.user.get_role_display }} ({{ log.user.email|default:"No email" }})</div>
