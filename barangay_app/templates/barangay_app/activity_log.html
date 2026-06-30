@@ -1,0 +1,120 @@
+{% extends "app_base.html" %}
+
+{% block title %}Activity Log — Barangay Connect{% endblock %}
+
+{% block sidebar_subtitle %}Staff Portal{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'staff_dashboard' %}" class="sidebar-link" data-target="dashboard">
+  <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Dashboard
+</a>
+<a href="{% url 'activity_log' %}" class="sidebar-link active" data-target="logs">
+  <i data-lucide="activity" class="h-4 w-4"></i> Activity Log
+</a>
+{% if user.is_official %}
+<a href="{% url 'official_reports' %}" class="sidebar-link" data-target="admin">
+  <i data-lucide="bar-chart-2" class="h-4 w-4"></i> Reports / Admin
+</a>
+<a href="{% url 'user_management' %}" class="sidebar-link" data-target="users">
+  <i data-lucide="users" class="h-4 w-4"></i> User Management
+</a>
+{% endif %}
+{% endblock %}
+
+{% block user_role_label %}{{ user.get_role_display }}{% endblock %}
+{% block header_title %}Activity Log{% endblock %}
+
+{% block content %}
+<div class="w-full p-8">
+  <div class="mb-8">
+    <p class="mb-1.5 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">AUDITING</p>
+    <h1 class="font-serif text-3xl text-ink">System Activity Log</h1>
+    <p class="mt-1 text-sm text-ink-muted">Audit trail of actions performed by officials and staff members.</p>
+  </div>
+
+  <div class="section-card">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border px-5 py-4 gap-3">
+      <h3 class="font-serif text-lg text-ink">Audit Logs</h3>
+      <div class="flex items-center gap-3">
+        <div class="relative w-full sm:w-64">
+          <i data-lucide="search" class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+          <input type="text" id="logSearch" onkeyup="filterLogs()" class="form-input py-1.5 pl-9 text-xs" placeholder="Search logs...">
+        </div>
+        <span class="font-mono text-xs text-ink-muted whitespace-nowrap" id="log-count">{{ logs|length }} logs</span>
+      </div>
+    </div>
+
+    {% if logs %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border bg-sand/40 text-left">
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Log ID</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">User ID</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">User Details</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Action</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Timestamp</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border" id="log-table-body">
+          {% for log in logs %}
+          <tr class="log-row transition-colors hover:bg-sand/30" 
+              data-id="{{ log.log_id }}"
+              data-user-id="{{ log.user.user_id }}"
+              data-username="{{ log.user.username|lower }}"
+              data-fullname="{{ log.user.get_full_name|lower }}"
+              data-action="{{ log.action|lower }}">
+            <td class="px-5 py-3.5 font-mono text-xs text-navy font-semibold">#{{ log.log_id }}</td>
+            <td class="px-5 py-3.5 font-mono text-xs text-ink-muted">USR_{{ log.user.user_id }}</td>
+            <td class="px-5 py-3.5 whitespace-nowrap">
+              <div class="font-semibold text-ink">{{ log.user.get_full_name|default:log.user.username }}</div>
+              <div class="text-[10px] text-ink-muted font-mono">{{ log.user.get_role_display }} ({{ log.user.email|default:"No email" }})</div>
+            </td>
+            <td class="px-5 py-3.5 max-w-md">
+              <p class="text-ink font-medium">{{ log.action }}</p>
+            </td>
+            <td class="px-5 py-3.5 text-ink-muted whitespace-nowrap text-xs">
+              {{ log.timestamp|date:"M d, Y H:i:s" }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center">
+      <i data-lucide="clipboard-list" class="mx-auto mb-3 h-10 w-10 text-ink-light/40"></i>
+      <p class="text-sm font-medium text-ink-muted">No activity logs recorded</p>
+      <p class="mt-1 text-xs text-ink-light">System events and audits will appear here.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function filterLogs() {
+    const query = document.getElementById('logSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('.log-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+      const id = row.getAttribute('data-id') || '';
+      const userId = row.getAttribute('data-user-id') || '';
+      const username = row.getAttribute('data-username') || '';
+      const fullname = row.getAttribute('data-fullname') || '';
+      const action = row.getAttribute('data-action') || '';
+      
+      if (id.includes(query) || userId.includes(query) || username.includes(query) || fullname.includes(query) || action.includes(query)) {
+        row.style.display = 'table-row';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+    
+    document.getElementById('log-count').innerText = visibleCount + ' logs';
+  }
+</script>
+{% endblock %}

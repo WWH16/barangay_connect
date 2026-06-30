@@ -8,6 +8,9 @@
 <a href="{% url 'staff_dashboard' %}" class="sidebar-link active" data-target="dashboard">
   <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Dashboard
 </a>
+<a href="{% url 'activity_log' %}" class="sidebar-link" data-target="logs">
+  <i data-lucide="activity" class="h-4 w-4"></i> Activity Log
+</a>
 {% if user.is_official %}
 <a href="{% url 'official_reports' %}" class="sidebar-link" data-target="admin">
   <i data-lucide="bar-chart-2" class="h-4 w-4"></i> Reports / Admin

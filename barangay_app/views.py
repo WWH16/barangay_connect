@@ -120,7 +120,7 @@ def assign_report(request, report_id):
                 # Notify resident and staff
                 Notification.objects.create(
                     user=resident_user,
-                    message=f"Your {case_type} (ID: #{report_id}) has been assigned to staff member {staff_user.get_full_name() or staff_user.username}."
+                    message=f"Your {case_type} (ID: #{report_id}) has been assigned to staff member {staff_user.get_full_name() or staff_user.username} by {request.user.get_full_name() or request.user.username} ({request.user.get_role_display()})."
                 )
                 Notification.objects.create(
                     user=staff_user,
@@ -153,7 +153,7 @@ def assign_report(request, report_id):
             # Notify resident
             Notification.objects.create(
                 user=resident_user,
-                message=f"Your {case_type} (ID: #{report_id}) is now unassigned."
+                message=f"Your {case_type} (ID: #{report_id}) is now unassigned by {request.user.get_full_name() or request.user.username} ({request.user.get_role_display()})."
             )
             # Log activity
             ActivityLog.objects.create(
@@ -200,7 +200,7 @@ def update_report_status(request, report_id):
             # Notify resident
             Notification.objects.create(
                 user=resident_user,
-                message=f"Your {case_type} (ID: #{report_id}) status has been updated to '{new_status}'."
+                message=f"Your {case_type} (ID: #{report_id}) status has been updated to '{new_status}' by {request.user.get_full_name() or request.user.username} ({request.user.get_role_display()})."
             )
             # Log activity
             ActivityLog.objects.create(
@@ -213,6 +213,7 @@ def update_report_status(request, report_id):
                 case_obj=case_obj,
                 case_type=case_type,
                 new_status=new_status,
+                updater_user=request.user,
             )
             
             messages.success(request, f'Status updated to {new_status}.')
@@ -253,7 +254,7 @@ def update_report_remarks(request, report_id):
         # Notify resident
         Notification.objects.create(
             user=resident_user,
-            message=f"Official update added to your {case_type} (ID: #{report_id}): \"{new_remarks}\""
+            message=f"Official update added to your {case_type} (ID: #{report_id}) by {request.user.get_full_name() or request.user.username} ({request.user.get_role_display()}): \"{new_remarks}\""
         )
         # Log activity
         ActivityLog.objects.create(
@@ -270,7 +271,7 @@ def update_report_remarks(request, report_id):
                 context={
                     'subject': f'Official update added to your {case_type} (ID: #{report_id})',
                     'recipient_name': resident_user.get_full_name() or resident_user.username,
-                    'message_body': f'An official update has been added to your {case_type}:\n\n"{new_remarks}"',
+                    'message_body': f'An official update has been added to your {case_type} by {request.user.get_full_name() or request.user.username} ({request.user.get_role_display()}):\n\n"{new_remarks}"',
                 }
             )
         
@@ -600,3 +601,21 @@ def test_email_view(request):
             'status': 'error',
             'message': 'Failed to send test email. Check server logs for details.',
         }, status=500)
+
+
+@login_required(login_url='login')
+def activity_log_view(request):
+    """Activity Log for Barangay Staff and Officials."""
+    if not request.user.is_staff_or_official:
+        messages.error(request, 'Access denied.')
+        return redirect('resident_dashboard')
+
+    if request.user.role == 'official':
+        logs = ActivityLog.objects.all().select_related('user').order_by('-timestamp')
+    else:
+        # Staff can only see their own logs
+        logs = ActivityLog.objects.filter(user=request.user).select_related('user').order_by('-timestamp')
+        
+    return render(request, 'barangay_app/activity_log.html', {
+        'logs': logs,
+    })

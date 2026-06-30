@@ -10,6 +10,7 @@ urlpatterns = [
     path('official/users/', views.user_management, name='user_management'),
     path('official/users/add/', views.add_user, name='add_user'),
     path('official/users/edit/<int:target_user_id>/', views.edit_user, name='edit_user'),
+    path('official/activity-log/', views.activity_log_view, name='activity_log'),
 
     # Email SMTP test endpoint
     path('staff/test-email/', views.test_email_view, name='test_email'),
