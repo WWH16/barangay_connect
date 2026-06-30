@@ -3,10 +3,34 @@ from django.contrib.auth import authenticate, login as auth_login, logout as aut
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.contrib import messages
+from django.conf import settings
+import requests
 from .models import User, Complaint, Incident, EvidenceFile, CaseAssignment, Notification, ActivityLog
 from barangay_app.email_utils import send_resident_notification
 
 User = get_user_model()
+
+def verify_recaptcha(request):
+    """Verify the reCAPTCHA v3 token."""
+    recaptcha_response = request.POST.get('g-recaptcha-response')
+    if not recaptcha_response:
+        return False
+        
+    data = {
+        'secret': settings.RECAPTCHA_SECRET_KEY,
+        'response': recaptcha_response
+    }
+    
+    try:
+        r = requests.post('https://www.google.com/recaptcha/api/siteverify', data=data)
+        result = r.json()
+        # Ensure it was successful and the score is decent (>= 0.5)
+        if result.get('success') and result.get('score', 0) >= 0.5:
+            return True
+    except Exception:
+        pass
+    
+    return False
 
 
 def login_view(request):
@@ -16,6 +40,11 @@ def login_view(request):
 
     if request.method == 'POST':
         action = request.POST.get('action')
+        
+        # Verify reCAPTCHA
+        if not verify_recaptcha(request):
+            messages.error(request, 'reCAPTCHA verification failed. Please try again.')
+            return render(request, 'resident/login.html', {'recaptcha_site_key': settings.RECAPTCHA_SITE_KEY})
 
         if action == 'login':
             email = request.POST.get('email', '').strip()
@@ -76,7 +105,7 @@ def login_view(request):
                 messages.success(request, 'Account created successfully! Welcome to Barangay Connect.')
                 return redirect('resident_dashboard')
 
-    return render(request, 'resident/login.html')
+    return render(request, 'resident/login.html', {'recaptcha_site_key': settings.RECAPTCHA_SITE_KEY})
 
 
 def logout_view(request):
@@ -190,6 +219,11 @@ def submit_report(request):
         return redirect('staff_dashboard')
 
     if request.method == 'POST':
+        # Verify reCAPTCHA
+        if not verify_recaptcha(request):
+            messages.error(request, 'reCAPTCHA verification failed. Please try again.')
+            return render(request, 'resident/submit_report.html', {'recaptcha_site_key': settings.RECAPTCHA_SITE_KEY})
+            
         report_type = request.POST.get('report_type')
         category = request.POST.get('category', '').strip()
         description = request.POST.get('description', '').strip()
@@ -265,7 +299,7 @@ def submit_report(request):
         else:
             messages.error(request, 'Invalid report type.')
 
-    return render(request, 'resident/submit_report.html')
+    return render(request, 'resident/submit_report.html', {'recaptcha_site_key': settings.RECAPTCHA_SITE_KEY})
 
 
 # ---------- helpers ----------

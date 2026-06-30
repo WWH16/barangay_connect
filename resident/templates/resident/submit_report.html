@@ -39,7 +39,7 @@
 
   <div class="section-card">
     <div class="p-6 md:p-8">
-      <form method="POST" action="{% url 'submit_report' %}" enctype="multipart/form-data" class="space-y-5" data-loading-text="Submitting report and sending email notification...">
+      <form id="form-submit-report" method="POST" action="{% url 'submit_report' %}" enctype="multipart/form-data" class="space-y-5" data-btn-loading-text="Submitting...">
         {% csrf_token %}
         <input type="hidden" name="report_type" id="report_type_input" value="complaint">
         <input type="hidden" name="latitude" id="form-lat" value="">
@@ -373,7 +373,37 @@
       document.getElementById('inc-coords').innerText = coordStr;
       document.getElementById('inc-coord-display').classList.remove('hidden');
     }
-    closeMapModal();
+    map.invalidateSize();
   }
+
+  {% if recaptcha_site_key %}
+  document.getElementById('form-submit-report').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const form = this;
+    const btn = form.querySelector('button[type="submit"]');
+    const loadingText = form.getAttribute('data-btn-loading-text') || 'Loading...';
+    if(btn) { btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="h-4 w-4 animate-spin"></i> ${loadingText}`; lucide.createIcons(); }
+
+    grecaptcha.ready(function() {
+      grecaptcha.execute('{{ recaptcha_site_key }}', {action: 'submit_report'}).then(function(token) {
+        let hiddenInput = form.querySelector('input[name="g-recaptcha-response"]');
+        if (!hiddenInput) {
+          hiddenInput = document.createElement('input');
+          hiddenInput.type = 'hidden';
+          hiddenInput.name = 'g-recaptcha-response';
+          form.appendChild(hiddenInput);
+        }
+        hiddenInput.value = token;
+        form.submit();
+      }).catch(function(error) {
+        if(btn) { btn.disabled = false; btn.innerText = 'Submit Report'; }
+        console.error('reCAPTCHA error:', error);
+      });
+    });
+  });
+  {% endif %}
 </script>
+{% if recaptcha_site_key %}
+<script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
+{% endif %}
 {% endblock %}

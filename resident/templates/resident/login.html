@@ -180,5 +180,45 @@
       document.getElementById('login-subtitle').innerText = 'RESIDENT REGISTRATION';
     }
   }
+
+  {% if recaptcha_site_key %}
+  function handleRecaptchaSubmit(e, formId) {
+    e.preventDefault();
+    const form = document.getElementById(formId);
+    
+    // Set button loading state
+    const btn = form.querySelector('button[type="submit"]');
+    const loadingText = form.getAttribute('data-btn-loading-text') || 'Loading...';
+    if(btn) { btn.disabled = true; btn.innerHTML = `<i data-lucide="loader-2" class="h-3.5 w-3.5 animate-spin"></i> ${loadingText}`; lucide.createIcons(); }
+
+    grecaptcha.ready(function() {
+      grecaptcha.execute('{{ recaptcha_site_key }}', {action: 'submit'}).then(function(token) {
+        let hiddenInput = form.querySelector('input[name="g-recaptcha-response"]');
+        if (!hiddenInput) {
+          hiddenInput = document.createElement('input');
+          hiddenInput.type = 'hidden';
+          hiddenInput.name = 'g-recaptcha-response';
+          form.appendChild(hiddenInput);
+        }
+        hiddenInput.value = token;
+        form.submit();
+      }).catch(function(error) {
+        if(btn) { btn.disabled = false; btn.innerText = 'Submit'; }
+        console.error('reCAPTCHA error:', error);
+      });
+    });
+  }
+
+  document.getElementById('form-login').addEventListener('submit', function(e) {
+    handleRecaptchaSubmit(e, 'form-login');
+  });
+  
+  document.getElementById('form-register').addEventListener('submit', function(e) {
+    handleRecaptchaSubmit(e, 'form-register');
+  });
+  {% endif %}
 </script>
+{% if recaptcha_site_key %}
+<script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
+{% endif %}
 {% endblock %}
