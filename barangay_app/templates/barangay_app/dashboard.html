@@ -1,12 +1,12 @@
 {% extends "app_base.html" %}
 
-{% block title %}Staff Dashboard — Barangay Connect{% endblock %}
+{% block title %}Care Monitoring — Barangay Connect{% endblock %}
 
 {% block sidebar_subtitle %}Staff Portal{% endblock %}
 
 {% block sidebar_nav %}
 <a href="{% url 'staff_dashboard' %}" class="sidebar-link active" data-target="dashboard">
-  <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Dashboard
+  <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Care Monitoring
 </a>
 <a href="{% url 'activity_log' %}" class="sidebar-link" data-target="logs">
   <i data-lucide="activity" class="h-4 w-4"></i> Activity Log
@@ -22,13 +22,13 @@
 {% endblock %}
 
 {% block user_role_label %}{{ user.get_role_display }}{% endblock %}
-{% block header_title %}Staff Dashboard{% endblock %}
+{% block header_title %}Care Monitoring{% endblock %}
 
 {% block content %}
 <div class="w-full p-8">
   <div class="mb-8">
     <p class="mb-1.5 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">MANAGEMENT</p>
-    <h1 class="font-serif text-3xl text-ink">Staff Dashboard</h1>
+    <h1 class="font-serif text-3xl text-ink">Care Monitoring</h1>
     <p class="mt-1 text-sm text-ink-muted">Manage all resident reports and community concerns.</p>
   </div>
 
