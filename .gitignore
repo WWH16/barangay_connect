@@ -219,3 +219,4 @@ __marimo__/
 .idea
 /resident/migrations
 /media
+/staticfiles

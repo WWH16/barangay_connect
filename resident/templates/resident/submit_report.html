@@ -34,7 +34,7 @@
 
   <div class="section-card">
     <div class="p-6 md:p-8">
-      <form method="POST" action="{% url 'submit_report' %}" enctype="multipart/form-data" class="space-y-5">
+      <form method="POST" action="{% url 'submit_report' %}" enctype="multipart/form-data" class="space-y-5" data-loading-text="Submitting report and sending email notification...">
         {% csrf_token %}
         <input type="hidden" name="report_type" id="report_type_input" value="complaint">
 

@@ -4,18 +4,92 @@
     <meta charset="UTF-8">
     <title>{{ subject }}</title>
     <style>
-        body {font-family: 'Inter', sans-serif; background:#f9f9f9; color:#333; padding:20px;}
-        .container {max-width:600px; margin:auto; background:#fff; padding:30px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1);}
-        h1 {color:#2c3e50; font-size:24px; margin-bottom:20px;}
-        p {line-height:1.6;}
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f0ebe1; /* sand */
+            color: #0f1117; /* ink */
+            padding: 40px 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+        }
+        .header {
+            background-color: #00236f; /* navy */
+            padding: 24px 32px;
+            text-align: center;
+            border-bottom: 4px solid #fbbf24; /* lime */
+        }
+        .header-title {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+        .content {
+            padding: 32px;
+        }
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #001550; /* navy-deep */
+        }
+        .message-body {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #4b5563; /* ink-muted approx */
+            margin-bottom: 24px;
+        }
+        .footer {
+            background-color: #fafaf8;
+            padding: 20px 32px;
+            text-align: center;
+            font-size: 12px;
+            color: #9ca3af; /* ink-light */
+            border-top: 1px solid #e5e7eb;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #fbbf24; /* lime */
+            color: #001550; /* navy-deep */
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 16px;
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>{{ subject }}</h1>
-    <p>Hello {{ recipient_name }},</p>
-    <p>{{ message_body }}</p>
-    <p>Best regards,<br/>Barangay Connect Team</p>
-</div>
+    <div class="container">
+        <div class="header">
+            <h1 class="header-title">Barangay Connect</h1>
+        </div>
+        <div class="content">
+            <div class="greeting">Hello {{ recipient_name }},</div>
+            <div class="message-body">
+                {{ message_body|linebreaks }}
+            </div>
+            
+            {% if action_url %}
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="{{ action_url }}" class="btn">{{ action_text|default:"Log In to View Dashboard" }}</a>
+            </div>
+            {% endif %}
+        </div>
+        <div class="footer">
+            <p style="margin: 0;">This is an automated message from Barangay Connect.</p>
+            <p style="margin: 4px 0 0;">Please do not reply directly to this email.</p>
+        </div>
+    </div>
 </body>
 </html>

@@ -110,10 +110,10 @@
             <td class="px-5 py-3 text-ink-muted whitespace-nowrap">{{ report.created_at|date:"M d, Y" }}</td>
             <td class="px-5 py-3">
               {% if user.is_official %}
-                <form method="POST" action="{% url 'assign_report' report.id %}" class="inline-block">
+                <form method="POST" action="{% url 'assign_report' report.id %}" class="inline-block" data-loading-text="Assigning staff and sending notification...">
                   {% csrf_token %}
                   <input type="hidden" name="report_type" value="{{ report.report_type }}">
-                  <select name="staff_id" onchange="this.form.submit()" class="rounded-sm border border-border bg-white px-2 py-1 text-xs text-ink outline-none focus:border-navy">
+                  <select name="staff_id" onchange="showGlobalLoader('Assigning staff and sending notification...'); this.form.submit()" class="rounded-sm border border-border bg-white px-2 py-1 text-xs text-ink outline-none focus:border-navy">
                     <option value="">Unassigned</option>
                     {% for staff in staff_members %}
                       <option value="{{ staff.user_id }}" {% if report.assigned_to == staff %}selected{% endif %}>
@@ -187,16 +187,16 @@
             </td>
             <td class="px-5 py-3 whitespace-nowrap">
               {% if user.is_official or report.assigned_to == user %}
-                <form method="POST" action="{% url 'update_report_status' report.id %}" class="inline-block">
+                <form method="POST" action="{% url 'update_report_status' report.id %}" class="inline-block" data-loading-text="Updating status and sending notification...">
                   {% csrf_token %}
                   <input type="hidden" name="report_type" value="{{ report.report_type }}">
-                  <select name="status" onchange="this.form.submit()" class="rounded-sm border border-border bg-white px-2 py-1 text-xs font-semibold outline-none focus:border-navy
+                  <select name="status" onchange="this.className = this.options[this.selectedIndex].className + ' rounded-sm border bg-white px-2 py-1 text-xs font-semibold outline-none focus:border-navy'; showGlobalLoader('Updating status and sending notification...'); this.form.submit()" class="rounded-sm border bg-white px-2 py-1 text-xs font-semibold outline-none focus:border-navy
                     {% if report.status == 'Pending' %}text-amber-600 border-amber-200
                     {% elif report.status == 'In Progress' %}text-blue-700 border-blue-200
                     {% else %}text-green-700 border-green-200{% endif %}">
-                    <option value="Pending" {% if report.status == 'Pending' %}selected{% endif %}>Pending</option>
-                    <option value="In Progress" {% if report.status == 'In Progress' %}selected{% endif %}>In Progress</option>
-                    <option value="Resolved" {% if report.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                    <option value="Pending" class="text-amber-600 border-amber-200" {% if report.status == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="In Progress" class="text-blue-700 border-blue-200" {% if report.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Resolved" class="text-green-700 border-green-200" {% if report.status == 'Resolved' %}selected{% endif %}>Resolved</option>
                   </select>
                 </form>
               {% else %}
@@ -224,6 +224,7 @@
 
 {% block extra_js %}
 <script>
+
   function openRemarksModal(id) {
     const modal = document.getElementById('remarks-modal-' + id);
     if (modal) {
