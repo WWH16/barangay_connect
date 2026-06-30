@@ -336,7 +336,20 @@
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(viewMap);
-      viewMarker = L.marker([lat, lng]).addTo(viewMap);
+      
+      const customIcon = L.divIcon({
+        className: 'custom-div-icon bg-transparent border-none',
+        html: `
+          <div class="relative flex h-8 w-8 items-center justify-center">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style="background-color: #00236f;"></span>
+            <span class="relative inline-flex rounded-full h-5 w-5 border-2 border-white shadow-md" style="background-color: #00236f; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></span>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+      
+      viewMarker = L.marker([lat, lng], {icon: customIcon}).addTo(viewMap);
     } else {
       viewMap.setView([lat, lng], 16);
       viewMarker.setLatLng([lat, lng]);

@@ -281,13 +281,18 @@
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(communityMap);
 
-  // Custom icon colors
+  // Custom icon colors with pulsing effect
   const createIcon = (color) => {
     return L.divIcon({
-      className: 'custom-div-icon',
-      html: `<div style="background-color:${color}; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow:0 0 4px rgba(0,0,0,0.4);"></div>`,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8]
+      className: 'custom-div-icon bg-transparent border-none',
+      html: `
+        <div class="relative flex h-8 w-8 items-center justify-center">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style="background-color: ${color};"></span>
+          <span class="relative inline-flex rounded-full h-5 w-5 border-2 border-white shadow-md" style="background-color: ${color}; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></span>
+        </div>
+      `,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
     });
   };
   
