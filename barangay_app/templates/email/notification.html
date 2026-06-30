@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ subject }}</title>
+    <style>
+        body {font-family: 'Inter', sans-serif; background:#f9f9f9; color:#333; padding:20px;}
+        .container {max-width:600px; margin:auto; background:#fff; padding:30px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+        h1 {color:#2c3e50; font-size:24px; margin-bottom:20px;}
+        p {line-height:1.6;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>{{ subject }}</h1>
+    <p>Hello {{ recipient_name }},</p>
+    <p>{{ message_body }}</p>
+    <p>Best regards,<br/>Barangay Connect Team</p>
+</div>
+</body>
+</html>

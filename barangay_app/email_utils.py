@@ -10,12 +10,36 @@ Usage:
 """
 
 import logging
+from django.template.loader import render_to_string
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage
 from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
+def send_resident_notification(to_email, subject, template_name, context):
+    """Render an HTML email template and send it to a resident.
+
+    Args:
+        to_email (str): Recipient email address.
+        subject (str): Email subject line.
+        template_name (str): Template filename located in `barangay_app/templates/email/`.
+        context (dict): Context data for rendering the template.
+    """
+    try:
+        html_content = render_to_string(f'email/{template_name}', context)
+        email = EmailMessage(
+            subject=subject,
+            body=html_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[to_email],
+        )
+        email.content_subtype = 'html'
+        email.send(fail_silently=False)
+        logger.info(f'Resident notification email sent to {to_email} using {template_name}.')
+    except Exception as e:
+        logger.error(f'Failed to send resident notification email to {to_email}: {e}')
 
 def send_report_submitted_email(case_obj, case_type):
     if case_type == 'complaint':

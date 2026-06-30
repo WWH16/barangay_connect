@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 from .models import User, Complaint, Incident, EvidenceFile, CaseAssignment, Notification, ActivityLog
+from barangay_app.email_utils import send_resident_notification
 
 User = get_user_model()
 
@@ -221,6 +222,17 @@ def submit_report(request):
                 )
                 
                 messages.success(request, 'Complaint submitted successfully!')
+                # Send resident email notification
+                send_resident_notification(
+                    to_email=request.user.email,
+                    subject=f'Your complaint "{title}" has been submitted',
+                    template_name='notification.html',
+                    context={
+                        'subject': f'Your complaint "{title}" has been submitted',
+                        'recipient_name': request.user.get_full_name() or request.user.username,
+                        'message_body': f'Your complaint "{title}" (ID: #{complaint.complaint_id}) has been successfully submitted. We will process it shortly.',
+                    }
+                )
                 return redirect('resident_dashboard')
             else:
                 messages.error(request, 'Please fill in all required fields.')
@@ -256,6 +268,17 @@ def submit_report(request):
                 )
                 
                 messages.success(request, 'Incident reported successfully!')
+                # Send resident email notification
+                send_resident_notification(
+                    to_email=request.user.email,
+                    subject=f'Your incident report "{category}" has been submitted',
+                    template_name='notification.html',
+                    context={
+                        'subject': f'Your incident report "{category}" has been submitted',
+                        'recipient_name': request.user.get_full_name() or request.user.username,
+                        'message_body': f'Your incident report "{category}" (ID: #{incident.incident_id}) has been successfully filed. We will process it shortly.',
+                    }
+                )
                 return redirect('resident_dashboard')
             else:
                 messages.error(request, 'Please fill in all required fields.')
