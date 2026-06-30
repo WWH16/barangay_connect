@@ -56,7 +56,7 @@
       </div>
 
       <!-- ===== LOGIN FORM ===== -->
-      <form id="form-login" method="POST" action="{% url 'login' %}" class="space-y-5">
+      <form id="form-login" method="POST" action="{% url 'login' %}" class="space-y-5" data-btn-loading-text="Logging in...">
         {% csrf_token %}
         <input type="hidden" name="action" value="login">
         <div>
@@ -83,7 +83,7 @@
           </div>
         </div>
         <button type="submit" class="btn-primary mt-2 w-full justify-center">
-          Continue <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+          Log in <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
         </button>
         <p class="text-center text-xs text-ink-muted">
           Don't have an account? <button type="button" onclick="switchLoginTab('register')" class="font-medium text-navy hover:underline">Register here</button>
@@ -91,7 +91,7 @@
       </form>
 
       <!-- ===== REGISTER FORM ===== -->
-      <form id="form-register" method="POST" action="{% url 'login' %}" class="hidden space-y-4">
+      <form id="form-register" method="POST" action="{% url 'login' %}" class="hidden space-y-4" data-btn-loading-text="Registering...">
         {% csrf_token %}
         <input type="hidden" name="action" value="register">
         

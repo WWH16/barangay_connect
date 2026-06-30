@@ -170,12 +170,35 @@
         }, 5000);
       });
 
-      // Global Form Loader
-      const forms = document.querySelectorAll('form:not([data-no-loader])');
-      forms.forEach(function(form) {
+      // Global Form Loader (Screen Overlay)
+      const globalForms = document.querySelectorAll('form[data-loading-text], form[data-use-global-loader]');
+      globalForms.forEach(function(form) {
         form.addEventListener('submit', function() {
           const loadingText = form.getAttribute('data-loading-text');
           showGlobalLoader(loadingText);
+        });
+      });
+
+      // Simple Button-level Loader
+      const normalForms = document.querySelectorAll('form:not([data-loading-text]):not([data-use-global-loader]):not([data-no-loader])');
+      normalForms.forEach(function(form) {
+        form.addEventListener('submit', function() {
+          const btn = form.querySelector('button[type="submit"]');
+          if (btn) {
+            // Check if form is valid before triggering loader
+            if (form.checkValidity && !form.checkValidity()) return;
+            
+            btn.disabled = true;
+            btn.style.opacity = '0.75';
+            btn.style.cursor = 'not-allowed';
+            
+            // Use custom button loading text if specified, otherwise keep original
+            const btnText = form.getAttribute('data-btn-loading-text') || btn.textContent.trim();
+            
+            // Insert inline spinner SVG and text
+            const spinnerHtml = `<svg style="display:inline-block;animation:spin 1s linear infinite;margin-right:8px;width:14px;height:14px;vertical-align:middle;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
+            btn.innerHTML = spinnerHtml + btnText;
+          }
         });
       });
     });
