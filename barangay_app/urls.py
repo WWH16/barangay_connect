@@ -11,5 +11,6 @@ urlpatterns = [
     path('official/users/add/', views.add_user, name='add_user'),
     path('official/users/edit/<int:target_user_id>/', views.edit_user, name='edit_user'),
 
-
+    # Email SMTP test endpoint
+    path('staff/test-email/', views.test_email_view, name='test_email'),
 ]

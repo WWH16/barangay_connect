@@ -2,7 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.contrib import messages
+from django.http import JsonResponse
 from resident.models import User, Complaint, Incident, EvidenceFile, CaseAssignment, Notification, ActivityLog
+from barangay_app.email_utils import send_case_assigned_email, send_status_update_email, send_test_email
 
 User = get_user_model()
 
@@ -131,6 +133,14 @@ def assign_report(request, report_id):
                     action=f"Assigned {case_type} #{report_id} to staff {staff_user.username}"
                 )
                 
+                # ── Send email notification to staff and resident ──
+                send_case_assigned_email(
+                    case_obj=case_obj,
+                    case_type=case_type,
+                    staff_user=staff_user,
+                    assigned_by=request.user,
+                )
+                
                 messages.success(request, f'Case assigned to {staff_user.get_full_name() or staff_user.username}.')
             except User.DoesNotExist:
                 messages.error(request, 'Selected staff member not found.')
@@ -196,6 +206,13 @@ def update_report_status(request, report_id):
             ActivityLog.objects.create(
                 user=request.user,
                 action=f"Updated status of {case_type} #{report_id} to {new_status}"
+            )
+            
+            # ── Send email notification to the resident ──
+            send_status_update_email(
+                case_obj=case_obj,
+                case_type=case_type,
+                new_status=new_status,
             )
             
             messages.success(request, f'Status updated to {new_status}.')
@@ -544,3 +561,29 @@ def edit_user(request, target_user_id):
 
     return redirect('user_management')
 
+
+@login_required(login_url='login')
+def test_email_view(request):
+    """Quick endpoint for staff/officials to verify Gmail SMTP is working."""
+    if not request.user.is_staff_or_official:
+        return JsonResponse({'status': 'error', 'message': 'Access denied.'}, status=403)
+
+    recipient = request.user.email
+    if not recipient:
+        return JsonResponse(
+            {'status': 'error', 'message': 'Your account has no email address.'},
+            status=400,
+        )
+
+    success = send_test_email(recipient)
+
+    if success:
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Test email sent to {recipient}. Check your inbox!',
+        })
+    else:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Failed to send test email. Check server logs for details.',
+        }, status=500)
