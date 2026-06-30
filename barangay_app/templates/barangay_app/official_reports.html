@@ -122,11 +122,26 @@
 
   <!-- Geographic Distribution (Community Map) -->
   <div class="section-card w-full mb-8 print:break-inside-avoid">
-    <div class="border-b border-border px-5 py-4 bg-sand/10">
-      <h3 class="font-serif text-lg text-ink font-semibold flex items-center gap-2">
-        <i data-lucide="map" class="h-5 w-5 text-navy"></i> Geographic Distribution Map
-      </h3>
-      <p class="text-[11px] text-ink-muted mt-0.5">Visual heatmap of pinpointed community concerns and incidents.</p>
+    <div class="border-b border-border px-5 py-4 bg-sand/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h3 class="font-serif text-lg text-ink font-semibold flex items-center gap-2">
+          <i data-lucide="map" class="h-5 w-5 text-navy"></i> Geographic Distribution Map
+        </h3>
+        <p class="text-[11px] text-ink-muted mt-0.5">Visual heatmap of pinpointed community concerns and incidents.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <select id="mapFilter" onchange="renderMapData()" class="form-input py-1.5 px-3 text-xs rounded-sm border border-border bg-white cursor-pointer min-w-[140px]">
+          <option value="all">All Reports</option>
+          <option value="status-pending">Status: Pending</option>
+          <option value="status-in progress">Status: In Progress</option>
+          <option value="status-resolved">Status: Resolved</option>
+          <option value="type-complaint">Type: Complaint</option>
+          <option value="type-incident">Type: Incident</option>
+        </select>
+        <button id="mapToggleBtn" onclick="toggleMapMode()" class="btn-ghost py-1.5 px-3 text-xs flex items-center gap-1.5 border border-border bg-white hover:bg-sand/35">
+          <i data-lucide="flame" class="h-3.5 w-3.5 text-orange-500"></i> Show Heatmap
+        </button>
+      </div>
     </div>
     <div class="p-4">
       <div id="community-map" class="h-[450px] w-full rounded-sm border border-border z-0"></div>
@@ -273,13 +288,28 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script>
   // -- Community Map Initialization --
   const communityMap = L.map('community-map').setView([14.5995, 120.9842], 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  const positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+  });
+
+  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(communityMap);
+  });
+
+  positron.addTo(communityMap);
+
+  const baseMaps = {
+    "Clean Style (Default)": positron,
+    "Detailed Map (OSM)": osm
+  };
+
+  L.control.layers(baseMaps).addTo(communityMap);
 
   // Custom icon colors with pulsing effect
   const createIcon = (color) => {
@@ -317,31 +347,84 @@
   ];
   
   let bounds = L.latLngBounds();
+  let markersLayer = L.layerGroup().addTo(communityMap);
+  let heatLayer = null;
+  let currentMapMode = 'pins'; // 'pins' or 'heatmap'
 
-  mapData.forEach(item => {
-    let icon = iconPending;
-    if (item.status === 'In Progress') icon = iconInProgress;
-    if (item.status === 'Resolved') icon = iconResolved;
+  function renderMapData() {
+    // Clear existing layers
+    markersLayer.clearLayers();
+    if (heatLayer) {
+      communityMap.removeLayer(heatLayer);
+      heatLayer = null;
+    }
     
-    const popupContent = `
-      <div class="p-1">
-        <span class="text-[9px] uppercase tracking-wider font-semibold text-ink-muted">${item.type}</span>
-        <h4 class="font-bold text-xs mt-0.5 mb-1">${item.title}</h4>
-        <span class="text-[10px] font-medium ${item.status === 'Resolved' ? 'text-green-600' : (item.status === 'Pending' ? 'text-amber-600' : 'text-blue-600')}">${item.status}</span>
-      </div>
-    `;
+    bounds = L.latLngBounds();
+    const heatPoints = [];
+    const filterVal = document.getElementById('mapFilter').value;
 
-    const marker = L.marker([item.lat, item.lng], {icon: icon})
-      .addTo(communityMap)
-      .bindPopup(popupContent);
+    mapData.forEach(item => {
+      // Apply Filter
+      if (filterVal !== 'all') {
+        const [fType, fVal] = filterVal.split('-');
+        if (fType === 'status' && item.status.toLowerCase() !== fVal) return;
+        if (fType === 'type' && item.type.toLowerCase() !== fVal) return;
+      }
+    
+      let icon = iconPending;
+      if (item.status === 'In Progress') icon = iconInProgress;
+      if (item.status === 'Resolved') icon = iconResolved;
       
-    bounds.extend([item.lat, item.lng]);
-  });
+      const popupContent = `
+        <div class="p-1">
+          <span class="text-[9px] uppercase tracking-wider font-semibold text-ink-muted">${item.type}</span>
+          <h4 class="font-bold text-xs mt-0.5 mb-1">${item.title}</h4>
+          <span class="text-[10px] font-medium ${item.status === 'Resolved' ? 'text-green-600' : (item.status === 'Pending' ? 'text-amber-600' : 'text-blue-600')}">${item.status}</span>
+        </div>
+      `;
 
-  // Fit map to show all pins if they exist
-  if (mapData.length > 0) {
-    communityMap.fitBounds(bounds, {padding: [50, 50]});
+      if (currentMapMode === 'pins') {
+        const marker = L.marker([item.lat, item.lng], {icon: icon})
+          .bindPopup(popupContent);
+        markersLayer.addLayer(marker);
+      } else {
+        // Prepare heat points
+        heatPoints.push([item.lat, item.lng, 1.0]); // lat, lng, intensity
+      }
+        
+      bounds.extend([item.lat, item.lng]);
+    });
+    
+    if (currentMapMode === 'heatmap' && heatPoints.length > 0) {
+      heatLayer = L.heatLayer(heatPoints, {
+        radius: 25,
+        blur: 15,
+        maxZoom: 14,
+        gradient: {0.4: 'blue', 0.6: 'lime', 1: 'red'}
+      }).addTo(communityMap);
+    }
+
+    // Fit map to show all pins if they exist
+    if (bounds.isValid()) {
+      communityMap.fitBounds(bounds, {padding: [50, 50], maxZoom: 16});
+    }
   }
+
+  function toggleMapMode() {
+    const btn = document.getElementById('mapToggleBtn');
+    if (currentMapMode === 'pins') {
+      currentMapMode = 'heatmap';
+      btn.innerHTML = '<i data-lucide="map-pin" class="h-3.5 w-3.5 text-navy"></i> Show Pins';
+    } else {
+      currentMapMode = 'pins';
+      btn.innerHTML = '<i data-lucide="flame" class="h-3.5 w-3.5 text-orange-500"></i> Show Heatmap';
+    }
+    lucide.createIcons();
+    renderMapData();
+  }
+  
+  // Initial render
+  renderMapData();
 
   // 1. Status Chart (Doughnut)
   const ctxStatus = document.getElementById('statusChart').getContext('2d');
