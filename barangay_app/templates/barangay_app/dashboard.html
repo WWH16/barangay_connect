@@ -1,12 +1,12 @@
 {% extends "app_base.html" %}
 
-{% block title %}Care Monitoring — Barangay Connect{% endblock %}
+{% block title %}Case Monitoring — Barangay Connect{% endblock %}
 
 {% block sidebar_subtitle %}Staff Portal{% endblock %}
 
 {% block sidebar_nav %}
 <a href="{% url 'staff_dashboard' %}" class="sidebar-link active" data-target="dashboard">
-  <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Care Monitoring
+  <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Case Monitoring
 </a>
 <a href="{% url 'activity_log' %}" class="sidebar-link" data-target="logs">
   <i data-lucide="activity" class="h-4 w-4"></i> Activity Log
@@ -22,14 +22,14 @@
 {% endblock %}
 
 {% block user_role_label %}{{ user.get_role_display }}{% endblock %}
-{% block header_title %}Care Monitoring{% endblock %}
+{% block header_title %}Case Monitoring{% endblock %}
 
 {% block content %}
 <div class="w-full p-8">
   <div class="mb-8">
     <p class="mb-1.5 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">MANAGEMENT</p>
-    <h1 class="font-serif text-3xl text-ink">Care Monitoring</h1>
-    <p class="mt-1 text-sm text-ink-muted">Manage all resident reports and community concerns.</p>
+    <h1 class="font-serif text-3xl text-ink">Case Monitoring</h1>
+    <p class="mt-1 text-sm text-ink-muted">Manage all resident reports, track statuses, and audit updates.</p>
   </div>
 
   <!-- Metric Cards -->
@@ -66,17 +66,50 @@
 
   <!-- All Reports Table -->
   <div class="section-card">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border px-5 py-3 gap-3">
-      <h3 class="font-serif text-lg text-ink">All Resident Reports</h3>
-      <div class="flex items-center gap-3">
-        {% if reports %}
-        <div class="relative w-full sm:w-64">
-          <i data-lucide="search" class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
-          <input type="text" id="reportSearch" onkeyup="filterReports()" class="form-input py-1.5 pl-9 text-xs" placeholder="Search reports...">
-        </div>
-        {% endif %}
-        <span class="font-mono text-xs text-ink-muted whitespace-nowrap">{{ total_reports }} total</span>
+    <div class="border-b border-border px-5 py-4 bg-sand/10">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <h3 class="font-serif text-lg text-ink">All Resident Reports</h3>
+        <span class="font-mono text-xs text-ink-muted whitespace-nowrap" id="report-count">{{ total_reports }} total</span>
       </div>
+      
+      {% if reports %}
+      <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        <!-- Search bar -->
+        <div class="relative w-full lg:max-w-sm">
+          <i data-lucide="search" class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-light"></i>
+          <input type="text" id="reportSearch" onkeyup="filterReports()" class="form-input py-1.5 pl-9 text-xs" placeholder="Search title, desc, submitter, assignee...">
+        </div>
+        
+        <!-- Filters group -->
+        <div class="flex flex-wrap items-center gap-3 text-xs">
+          <!-- Status filter -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-ink-muted font-mono uppercase text-[9px] tracking-wider">Status</span>
+            <select id="statusFilter" onchange="filterReports()" class="form-input py-1 px-2.5 text-xs rounded-sm border border-border bg-white w-28">
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="in progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+            </select>
+          </div>
+          
+          <!-- Date range filter -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-ink-muted font-mono uppercase text-[9px] tracking-wider">From</span>
+            <input type="date" id="startDate" onchange="filterReports()" class="form-input py-1 px-2 text-xs rounded-sm border border-border bg-white w-32">
+          </div>
+          
+          <div class="flex items-center gap-1.5">
+            <span class="text-ink-muted font-mono uppercase text-[9px] tracking-wider">To</span>
+            <input type="date" id="endDate" onchange="filterReports()" class="form-input py-1 px-2 text-xs rounded-sm border border-border bg-white w-32">
+          </div>
+          
+          <button type="button" onclick="resetFilters()" class="btn-ghost py-1 px-2.5 text-xs flex items-center gap-1">
+            <i data-lucide="rotate-ccw" class="h-3 w-3"></i> Reset
+          </button>
+        </div>
+      </div>
+      {% endif %}
     </div>
 
     {% if reports %}
@@ -97,7 +130,10 @@
           <tr class="report-row transition-colors hover:bg-sand/30" 
               data-title="{{ report.title|lower }}" 
               data-desc="{{ report.description|lower }}" 
-              data-resident="{{ report.resident.get_full_name|default:report.resident.username|lower }}">
+              data-resident="{{ report.resident.get_full_name|default:report.resident.username|lower }}"
+              data-assigned="{% if report.assigned_to %}{{ report.assigned_to.get_full_name|default:report.assigned_to.username|lower }}{% else %}unassigned{% endif %}"
+              data-status="{{ report.status|lower }}"
+              data-date="{{ report.created_at|date:'Y-m-d' }}">
             <td class="px-5 py-3 max-w-md">
               <p class="font-medium text-ink">{{ report.title }}</p>
               <p class="mt-0.5 text-xs text-ink-muted">{{ report.description }}</p>
@@ -246,17 +282,69 @@
 
   function filterReports() {
     const query = document.getElementById('reportSearch').value.toLowerCase();
+    const statusVal = document.getElementById('statusFilter').value.toLowerCase();
+    const startDateVal = document.getElementById('startDate').value;
+    const endDateVal = document.getElementById('endDate').value;
+    
     const rows = document.querySelectorAll('.report-row');
+    let visibleCount = 0;
+
     rows.forEach(row => {
       const title = row.getAttribute('data-title') || '';
       const desc = row.getAttribute('data-desc') || '';
       const resident = row.getAttribute('data-resident') || '';
-      if (title.includes(query) || desc.includes(query) || resident.includes(query)) {
+      const assigned = row.getAttribute('data-assigned') || '';
+      const status = row.getAttribute('data-status') || '';
+      const dateStr = row.getAttribute('data-date') || ''; // 'YYYY-MM-DD'
+      
+      // Search query match (title, description, submitter/resident, assignee)
+      const matchesSearch = title.includes(query) || 
+                            desc.includes(query) || 
+                            resident.includes(query) || 
+                            assigned.includes(query);
+                            
+      // Status match
+      const matchesStatus = (statusVal === 'all') || (status === statusVal);
+      
+      // Date range match
+      let matchesDate = true;
+      if (dateStr) {
+        if (startDateVal && dateStr < startDateVal) {
+          matchesDate = false;
+        }
+        if (endDateVal && dateStr > endDateVal) {
+          matchesDate = false;
+        }
+      } else if (startDateVal || endDateVal) {
+        matchesDate = false;
+      }
+      
+      if (matchesSearch && matchesStatus && matchesDate) {
         row.style.display = 'table-row';
+        visibleCount++;
       } else {
         row.style.display = 'none';
       }
     });
+
+    const countElem = document.getElementById('report-count');
+    if (countElem) {
+      countElem.innerText = visibleCount + ' visible / {{ total_reports }} total';
+    }
+  }
+
+  function resetFilters() {
+    const searchInput = document.getElementById('reportSearch');
+    const statusSelect = document.getElementById('statusFilter');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+
+    if (searchInput) searchInput.value = '';
+    if (statusSelect) statusSelect.value = 'all';
+    if (startDateInput) startDateInput.value = '';
+    if (endDateInput) endDateInput.value = '';
+
+    filterReports();
   }
 </script>
 {% endblock %}
