@@ -163,7 +163,7 @@
                     <p class="text-[11px] text-ink-muted mt-0.5">{{ report.description|truncatewords:20 }}</p>
                   </div>
 
-                  <form method="POST" action="{% url 'update_report_remarks' report.id %}">
+                  <form method="POST" action="{% url 'update_report_remarks' report.id %}" data-loading-text="Updating remarks and sending notification...">
                     {% csrf_token %}
                     <input type="hidden" name="report_type" value="{{ report.report_type }}">
                     <label class="form-label mb-1.5 text-[10px]">Remarks / Updates</label>

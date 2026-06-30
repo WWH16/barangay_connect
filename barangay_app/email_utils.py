@@ -1,50 +1,70 @@
 """
 email_utils.py — Reusable email notification helpers for Barangay Connect.
 
-All functions use Django's send_mail() and are wrapped in try/except
-so that a failed email NEVER crashes the application.
-
-Usage:
-    from barangay_app.email_utils import send_report_submitted_email
-    send_report_submitted_email(complaint_obj, request.user)
+All functions use Django's render_to_string() to send themed HTML emails
+and are wrapped in try/except so that a failed email NEVER crashes the application.
 """
 
 import logging
 from django.template.loader import render_to_string
 from django.conf import settings
-from django.core.mail import send_mail, EmailMessage
+from django.core.mail import EmailMessage
 from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
-def send_resident_notification(to_email, subject, template_name, context):
-    """Render an HTML email template and send it to a resident.
+
+def send_themed_email(to_emails, subject, recipient_name, message_body):
+    """Sends a themed HTML email using email/notification.html.
 
     Args:
-        to_email (str): Recipient email address.
-        subject (str): Email subject line.
-        template_name (str): Template filename located in `barangay_app/templates/email/`.
-        context (dict): Context data for rendering the template.
+        to_emails (str or list): One or more email addresses.
+        subject (str): Email subject.
+        recipient_name (str): Name of recipient(s) to address.
+        message_body (str): Content of the email.
     """
+    if isinstance(to_emails, str):
+        to_emails = [to_emails]
+
     try:
-        html_content = render_to_string(f'email/{template_name}', context)
+        context = {
+            'subject': subject,
+            'recipient_name': recipient_name,
+            'message_body': message_body,
+        }
+        html_content = render_to_string('email/notification.html', context)
         email = EmailMessage(
             subject=subject,
             body=html_content,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[to_email],
+            to=to_emails,
         )
         email.content_subtype = 'html'
         email.send(fail_silently=False)
-        logger.info(f'Resident notification email sent to {to_email} using {template_name}.')
+        logger.info(f'Themed HTML email sent to {to_emails}.')
+        return True
     except Exception as e:
-        logger.error(f'Failed to send resident notification email to {to_email}: {e}')
+        logger.error(f'Failed to send themed HTML email to {to_emails}: {e}')
+        return False
+
+
+def send_resident_notification(to_email, subject, template_name, context):
+    """Render an HTML email template and send it to a resident.
+    Maintained for backward compatibility.
+    """
+    return send_themed_email(
+        to_emails=to_email,
+        subject=subject,
+        recipient_name=context.get('recipient_name', 'Resident'),
+        message_body=context.get('message_body', '')
+    )
+
 
 def send_report_submitted_email(case_obj, case_type):
     if case_type == 'complaint':
         subject = f'[Barangay Connect] New Complaint Filed: {case_obj.title}'
-        body = (
+        message_body = (
             f'A new complaint has been submitted.\n\n'
             f'Title: {case_obj.title}\n'
             f'Category: {case_obj.category}\n'
@@ -55,7 +75,7 @@ def send_report_submitted_email(case_obj, case_type):
         )
     else:
         subject = f'[Barangay Connect] New Incident Reported: {case_obj.category}'
-        body = (
+        message_body = (
             f'A new incident has been reported.\n\n'
             f'Category: {case_obj.category}\n'
             f'Location: {case_obj.location}\n'
@@ -79,17 +99,13 @@ def send_report_submitted_email(case_obj, case_type):
         logger.warning('No staff/official email addresses found — skipping notification.')
         return
 
-    try:
-        send_mail(
-            subject=subject,
-            message=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=staff_emails,
-            fail_silently=False,
-        )
-        logger.info(f'Report-submitted email sent to {len(staff_emails)} recipient(s).')
-    except Exception as e:
-        logger.error(f'Failed to send report-submitted email: {e}')
+    send_themed_email(
+        to_emails=staff_emails,
+        subject=subject,
+        recipient_name='Staff / Official',
+        message_body=message_body
+    )
+
 
 def send_status_update_email(case_obj, case_type, new_status):
     resident = case_obj.user
@@ -104,27 +120,20 @@ def send_status_update_email(case_obj, case_type, new_status):
         case_label = f'Incident #{case_obj.incident_id}: {case_obj.category} at {case_obj.location}'
 
     subject = f'[Barangay Connect] Your {case_type.title()} Status Updated to "{new_status}"'
-    body = (
-        f'Good day, {resident.get_full_name() or resident.username}!\n\n'
-        f'Your {case_type} has been updated:\n\n'
+    message_body = (
+        f'Your {case_type} status has been updated:\n\n'
         f'Case: {case_label}\n'
         f'New Status: {new_status}\n\n'
-        f'Log in to Barangay Connect for more details.\n\n'
-        f'Thank you,\n'
-        f'Barangay Connect Team'
+        f'Log in to Barangay Connect for more details.'
     )
 
-    try:
-        send_mail(
-            subject=subject,
-            message=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[resident.email],
-            fail_silently=False,
-        )
-        logger.info(f'Status-update email sent to {resident.email}.')
-    except Exception as e:
-        logger.error(f'Failed to send status-update email to {resident.email}: {e}')
+    send_themed_email(
+        to_emails=resident.email,
+        subject=subject,
+        recipient_name=resident.get_full_name() or resident.username,
+        message_body=message_body
+    )
+
 
 def send_case_assigned_email(case_obj, case_type, staff_user, assigned_by):
     resident = case_obj.user
@@ -136,64 +145,47 @@ def send_case_assigned_email(case_obj, case_type, staff_user, assigned_by):
 
     # ── Email to staff ──────────────────────────────────────
     if staff_user.email:
-        try:
-            send_mail(
-                subject=f'[Barangay Connect] You have been assigned: {case_label}',
-                message=(
-                    f'Hi {staff_user.get_full_name() or staff_user.username},\n\n'
-                    f'You have been assigned to investigate the following {case_type}:\n\n'
-                    f'Case: {case_label}\n'
-                    f'Description: {case_obj.description}\n'
-                    f'Assigned by: {assigned_by.get_full_name() or assigned_by.username}\n\n'
-                    f'Please log in to Barangay Connect to take action.\n\n'
-                    f'Thank you,\n'
-                    f'Barangay Connect Team'
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[staff_user.email],
-                fail_silently=False,
-            )
-            logger.info(f'Assignment email sent to staff {staff_user.email}.')
-        except Exception as e:
-            logger.error(f'Failed to send assignment email to staff {staff_user.email}: {e}')
+        subject = f'[Barangay Connect] You have been assigned: {case_label}'
+        message_body = (
+            f'You have been assigned to investigate the following {case_type}:\n\n'
+            f'Case: {case_label}\n'
+            f'Description: {case_obj.description}\n'
+            f'Assigned by: {assigned_by.get_full_name() or assigned_by.username}\n\n'
+            f'Please log in to Barangay Connect to take action.'
+        )
+        send_themed_email(
+            to_emails=staff_user.email,
+            subject=subject,
+            recipient_name=staff_user.get_full_name() or staff_user.username,
+            message_body=message_body
+        )
 
     # ── Email to resident ───────────────────────────────────
     if resident.email:
-        try:
-            send_mail(
-                subject=f'[Barangay Connect] Your {case_type.title()} Has Been Assigned',
-                message=(
-                    f'Good day, {resident.get_full_name() or resident.username}!\n\n'
-                    f'Your {case_type} is now being handled:\n\n'
-                    f'Case: {case_label}\n'
-                    f'Assigned to: {staff_user.get_full_name() or staff_user.username}\n\n'
-                    f'You will receive further updates as your case progresses.\n\n'
-                    f'Thank you,\n'
-                    f'Barangay Connect Team'
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[resident.email],
-                fail_silently=False,
-            )
-            logger.info(f'Assignment notification email sent to resident {resident.email}.')
-        except Exception as e:
-            logger.error(f'Failed to send assignment email to resident {resident.email}: {e}')
+        subject = f'[Barangay Connect] Your {case_type.title()} Has Been Assigned'
+        message_body = (
+            f'Your {case_type} is now being handled:\n\n'
+            f'Case: {case_label}\n'
+            f'Assigned to: {staff_user.get_full_name() or staff_user.username}\n\n'
+            f'You will receive further updates as your case progresses.'
+        )
+        send_themed_email(
+            to_emails=resident.email,
+            subject=subject,
+            recipient_name=resident.get_full_name() or resident.username,
+            message_body=message_body
+        )
+
 
 def send_test_email(recipient_email):
-    try:
-        send_mail(
-            subject='[Barangay Connect] SMTP Test — Success!',
-            message=(
-                'If you are reading this, your Gmail SMTP configuration '
-                'is working correctly.\n\n'
-                '— Barangay Connect'
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[recipient_email],
-            fail_silently=False,
-        )
-        logger.info(f'Test email sent successfully to {recipient_email}.')
-        return True
-    except Exception as e:
-        logger.error(f'Test email failed: {e}')
-        return False
+    subject = '[Barangay Connect] SMTP Test — Success!'
+    message_body = (
+        'If you are reading this, your Gmail SMTP configuration '
+        'is working correctly.'
+    )
+    return send_themed_email(
+        to_emails=recipient_email,
+        subject=subject,
+        recipient_name='Resident / Staff',
+        message_body=message_body
+    )

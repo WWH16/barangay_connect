@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.http import JsonResponse
 from resident.models import User, Complaint, Incident, EvidenceFile, CaseAssignment, Notification, ActivityLog
-from barangay_app.email_utils import send_case_assigned_email, send_status_update_email, send_test_email
+from barangay_app.email_utils import send_case_assigned_email, send_status_update_email, send_test_email, send_resident_notification
 
 User = get_user_model()
 
@@ -260,6 +260,19 @@ def update_report_remarks(request, report_id):
             user=request.user,
             action=f"Added case remarks to {case_type} #{report_id}"
         )
+        
+        # Send resident email notification
+        if resident_user.email:
+            send_resident_notification(
+                to_email=resident_user.email,
+                subject=f'Official update added to your {case_type}',
+                template_name='notification.html',
+                context={
+                    'subject': f'Official update added to your {case_type} (ID: #{report_id})',
+                    'recipient_name': resident_user.get_full_name() or resident_user.username,
+                    'message_body': f'An official update has been added to your {case_type}:\n\n"{new_remarks}"',
+                }
+            )
         
         messages.success(request, 'Remarks updated successfully.')
 
