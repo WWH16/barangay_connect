@@ -23,9 +23,14 @@
 {% block header_title %}Reports & Analytics{% endblock %}
 
 {% block header_actions %}
-<button onclick="window.print()" class="btn-primary py-1 px-3 text-xs flex items-center gap-1.5 print:hidden">
-  <i data-lucide="printer" class="h-3.5 w-3.5"></i> Export / Print
-</button>
+<div class="flex items-center gap-2 print:hidden">
+  <button onclick="window.print()" class="btn-ghost py-1.5 px-3 text-xs flex items-center gap-1.5 border border-border bg-white hover:bg-sand/35">
+    <i data-lucide="file-text" class="h-3.5 w-3.5 text-navy"></i> Save as PDF
+  </button>
+  <button onclick="window.print()" class="btn-primary py-1.5 px-3 text-xs flex items-center gap-1.5">
+    <i data-lucide="printer" class="h-3.5 w-3.5"></i> Print Dashboard
+  </button>
+</div>
 {% endblock %}
 
 {% block content %}

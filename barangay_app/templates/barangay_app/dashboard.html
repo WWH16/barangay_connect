@@ -4,6 +4,19 @@
 
 {% block sidebar_subtitle %}Staff Portal{% endblock %}
 
+{% block extra_head %}
+<style>
+  @media print {
+    aside.sidebar { display: none !important; }
+    header { display: none !important; }
+    .ml-64 { margin-left: 0 !important; }
+    .print\:hidden { display: none !important; }
+    body { background-color: white !important; }
+    main { padding: 0 !important; }
+  }
+</style>
+{% endblock %}
+
 {% block sidebar_nav %}
 <a href="{% url 'staff_dashboard' %}" class="sidebar-link active" data-target="dashboard">
   <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Case Monitoring
@@ -23,6 +36,17 @@
 
 {% block user_role_label %}{{ user.get_role_display }}{% endblock %}
 {% block header_title %}Case Monitoring{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center gap-2 print:hidden">
+  <button onclick="exportToCSV()" class="btn-ghost py-1.5 px-3 text-xs flex items-center gap-1.5 border border-green-200 hover:bg-green-50/50">
+    <i data-lucide="file-spreadsheet" class="h-3.5 w-3.5 text-green-600"></i> Export Excel
+  </button>
+  <button onclick="printFilteredPDF()" class="btn-primary py-1.5 px-3 text-xs flex items-center gap-1.5">
+    <i data-lucide="file-text" class="h-3.5 w-3.5"></i> Export Table (PDF)
+  </button>
+</div>
+{% endblock %}
 
 {% block content %}
 <div class="w-full p-8">
@@ -128,6 +152,8 @@
         <tbody class="divide-y divide-border">
           {% for report in reports %}
           <tr class="report-row transition-colors hover:bg-sand/30" 
+              data-id="{{ report.id }}"
+              data-type="{{ report.report_type }}"
               data-title="{{ report.title|lower }}" 
               data-desc="{{ report.description|lower }}" 
               data-resident="{{ report.resident.get_full_name|default:report.resident.username|lower }}"
@@ -345,6 +371,193 @@
     if (endDateInput) endDateInput.value = '';
 
     filterReports();
+  }
+
+  function exportToCSV() {
+    const rows = document.querySelectorAll('.report-row');
+    const csvData = [];
+    
+    // Header row
+    csvData.push(['Report ID', 'Type', 'Title', 'Description', 'Submitted By', 'Date', 'Assigned To', 'Status', 'Remarks']);
+    
+    rows.forEach(row => {
+      if (row.style.display !== 'none') {
+        const id = row.getAttribute('data-id') || '';
+        const reportType = row.getAttribute('data-type') || 'report';
+        const title = row.querySelector('td:nth-child(1) p.font-medium')?.textContent.trim() || '';
+        const desc = row.querySelector('td:nth-child(1) p.text-xs')?.textContent.trim() || '';
+        const resident = row.querySelector('td:nth-child(2) div.font-medium')?.textContent.trim() || '';
+        const date = row.querySelector('td:nth-child(3)')?.textContent.trim() || '';
+        
+        let assigned = 'Unassigned';
+        const selectStaff = row.querySelector('td:nth-child(4) select[name="staff_id"]');
+        if (selectStaff) {
+          assigned = selectStaff.options[selectStaff.selectedIndex].text.trim();
+        } else {
+          assigned = row.querySelector('td:nth-child(4)')?.textContent.trim() || 'Unassigned';
+        }
+        
+        let status = 'Pending';
+        const selectStatus = row.querySelector('td:nth-child(6) select[name="status"]');
+        if (selectStatus) {
+          status = selectStatus.options[selectStatus.selectedIndex].text.trim();
+        } else {
+          status = row.querySelector('td:nth-child(6) span')?.textContent.trim() || 'Pending';
+        }
+        
+        // Extract remarks text safely
+        const remarksBtn = row.querySelector('td:nth-child(5) button');
+        let remarks = '';
+        if (remarksBtn) {
+          const reportId = row.getAttribute('data-id');
+          const modalTextarea = document.querySelector(`#remarks-modal-${reportId} textarea[name="remarks"]`);
+          if (modalTextarea) {
+            remarks = modalTextarea.value.trim();
+          } else {
+            const remarksViewOnly = document.querySelector(`#remarks-modal-${reportId} div.bg-\\[\\#fafaf8\\] p`);
+            if (remarksViewOnly) {
+              remarks = remarksViewOnly.textContent.trim();
+            }
+          }
+        }
+
+        csvData.push([
+          `#${id}`, 
+          reportType.toUpperCase(),
+          title.replace(/"/g, '""'), 
+          desc.replace(/"/g, '""'), 
+          resident.replace(/"/g, '""'), 
+          date.replace(/"/g, '""'), 
+          assigned.replace(/"/g, '""'), 
+          status.toUpperCase(), 
+          remarks.replace(/"/g, '""')
+        ]);
+      }
+    });
+    
+    let csvContent = "\uFEFF"; // Add BOM to support UTF-8 in Excel
+    csvData.forEach(infoArray => {
+      const rowContent = infoArray.map(val => `"${val}"`).join(",");
+      csvContent += rowContent + "\r\n";
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `barangay_connect_cases_report_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function printFilteredPDF() {
+    const rows = document.querySelectorAll('.report-row');
+    let reportRowsHtml = '';
+    
+    rows.forEach(row => {
+      if (row.style.display !== 'none') {
+        const id = row.getAttribute('data-id') || '';
+        const reportType = row.getAttribute('data-type') || 'report';
+        const title = row.querySelector('td:nth-child(1) p.font-medium')?.textContent.trim() || '';
+        const desc = row.querySelector('td:nth-child(1) p.text-xs')?.textContent.trim() || '';
+        const resident = row.querySelector('td:nth-child(2) div.font-medium')?.textContent.trim() || '';
+        const date = row.querySelector('td:nth-child(3)')?.textContent.trim() || '';
+        
+        let assigned = 'Unassigned';
+        const selectStaff = row.querySelector('td:nth-child(4) select[name="staff_id"]');
+        if (selectStaff) {
+          assigned = selectStaff.options[selectStaff.selectedIndex].text.trim();
+        } else {
+          assigned = row.querySelector('td:nth-child(4)')?.textContent.trim() || 'Unassigned';
+        }
+        
+        let status = 'Pending';
+        const selectStatus = row.querySelector('td:nth-child(6) select[name="status"]');
+        if (selectStatus) {
+          status = selectStatus.options[selectStatus.selectedIndex].text.trim();
+        } else {
+          status = row.querySelector('td:nth-child(6) span')?.textContent.trim() || 'Pending';
+        }
+
+        const reportId = row.getAttribute('data-id');
+        const modalTextarea = document.querySelector(`#remarks-modal-${reportId} textarea[name="remarks"]`);
+        let remarks = '';
+        if (modalTextarea) {
+          remarks = modalTextarea.value.trim();
+        } else {
+          const remarksViewOnly = document.querySelector(`#remarks-modal-${reportId} div.bg-\\[\\#fafaf8\\] p`);
+          if (remarksViewOnly) {
+            remarks = remarksViewOnly.textContent.trim();
+          }
+        }
+        
+        reportRowsHtml += `
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">#${id}</td>
+            <td style="padding: 8px; border: 1px solid #ddd; text-transform: capitalize;">${reportType}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+              <strong>${title}</strong><br>
+              <span style="font-size: 11px; color: #555;">${desc}</span>
+            </td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${resident}</td>
+            <td style="padding: 8px; border: 1px solid #ddd; white-space: nowrap;">${date}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${assigned}</td>
+            <td style="padding: 8px; border: 1px solid #ddd; white-space: nowrap;">${status}</td>
+            <td style="padding: 8px; border: 1px solid #ddd; font-size: 11px;">${remarks || '<span style="color:#aaa;">None</span>'}</td>
+          </tr>
+        `;
+      }
+    });
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+      <head>
+        <title>Barangay Connect - Case Monitoring Report</title>
+        <style>
+          body { font-family: system-ui, -apple-system, sans-serif; color: #333; margin: 40px; }
+          h1 { font-size: 22px; color: #00236f; margin-bottom: 5px; }
+          p { font-size: 11px; color: #666; margin-top: 0; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px; }
+          th { background-color: #f8fafc; text-align: left; padding: 10px; border: 1px solid #e2e8f0; color: #475569; font-weight: 600; }
+          td { border: 1px solid #e2e8f0; }
+          .footer { margin-top: 40px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+        </style>
+      </head>
+      <body>
+        <h1 style="font-family: serif;">Barangay Connect - Case Monitoring Report</h1>
+        <p>Generated on: ${new Date().toLocaleString()} | Filtered Results summary</p>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 8%">ID</th>
+              <th style="width: 10%">Type</th>
+              <th style="width: 25%">Title & Description</th>
+              <th style="width: 15%">Submitted By</th>
+              <th style="width: 12%">Date</th>
+              <th style="width: 15%">Assigned To</th>
+              <th style="width: 10%">Status</th>
+              <th style="width: 15%">Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${reportRowsHtml || '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #64748b;">No records match current filters.</td></tr>'}
+          </tbody>
+        </table>
+        <div class="footer">
+          This is an official system generated report from Barangay Connect.
+        </div>
+        <script>
+          window.onload = function() {
+            window.print();
+            window.close();
+          }
+        <\/script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   }
 </script>
 {% endblock %}
