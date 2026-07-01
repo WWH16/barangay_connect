@@ -1,0 +1,407 @@
+{% extends "app_base.html" %}
+
+{% block title %}Backup & Recovery — Barangay Connect{% endblock %}
+
+{% block sidebar_subtitle %}Official Portal{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{% url 'staff_dashboard' %}" class="sidebar-link" data-target="dashboard">
+  <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Case Monitoring
+</a>
+<a href="{% url 'activity_log' %}" class="sidebar-link" data-target="logs">
+  <i data-lucide="activity" class="h-4 w-4"></i> Activity Log
+</a>
+<a href="{% url 'official_reports' %}" class="sidebar-link" data-target="admin">
+  <i data-lucide="bar-chart-2" class="h-4 w-4"></i> Reports / Admin
+</a>
+<a href="{% url 'user_management' %}" class="sidebar-link" data-target="users">
+  <i data-lucide="users" class="h-4 w-4"></i> User Management
+</a>
+<a href="{% url 'backup_recovery' %}" class="sidebar-link active" data-target="backup">
+  <i data-lucide="database" class="h-4 w-4"></i> Backup & Recovery
+</a>
+{% endblock %}
+
+{% block user_role_label %}{{ user.get_role_display }}{% endblock %}
+{% block header_title %}Backup & Recovery{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center gap-2">
+  <form method="POST" action="{% url 'create_backup' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn-primary py-1.5 px-3 text-xs flex items-center gap-1.5">
+      <i data-lucide="plus-circle" class="h-3.5 w-3.5"></i> Generate Backup
+    </button>
+  </form>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="w-full p-8">
+  <!-- Page Header -->
+  <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <p class="mb-1.5 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">ADMINISTRATION</p>
+      <h1 class="font-serif text-3xl text-ink">Database Backup & Recovery</h1>
+      <p class="mt-1 text-sm text-ink-muted">Manage system data safety, download weekly/manual backups, and restore configurations.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Active Database Info -->
+    <div class="section-card p-6 bg-white border border-border flex flex-col justify-between">
+      <div>
+        <div class="flex items-center gap-2 text-navy mb-4">
+          <i data-lucide="database" class="h-5 w-5"></i>
+          <h3 class="font-serif text-lg text-ink font-semibold">Active Database</h3>
+        </div>
+        <div class="space-y-3.5 text-xs">
+          <div class="flex justify-between border-b border-sand pb-2">
+            <span class="text-ink-muted">Database Engine:</span>
+            <span class="font-mono font-semibold text-ink">SQLite 3</span>
+          </div>
+          <div class="flex justify-between border-b border-sand pb-2">
+            <span class="text-ink-muted">Database Size:</span>
+            <span class="font-mono font-semibold text-ink">{{ active_db_size|filesizeformat }}</span>
+          </div>
+          <div class="flex justify-between border-b border-sand pb-2">
+            <span class="text-ink-muted">Location:</span>
+            <span class="font-mono font-semibold text-ink-muted truncate max-w-[180px]">db.sqlite3</span>
+          </div>
+          <div class="flex justify-between border-b border-sand pb-2">
+            <span class="text-ink-muted">Weekly Auto-Backups:</span>
+            {% if backup_settings.auto_backup_enabled %}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-green-50 text-green-700 font-semibold uppercase tracking-wider text-[9px] border border-green-200">
+              Active
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider text-[9px] border border-slate-200">
+              Disabled
+            </span>
+            {% endif %}
+          </div>
+          <div class="flex justify-between">
+            <span class="text-ink-muted">Scheduled Day/Time:</span>
+            <span class="font-mono font-semibold text-navy">
+              {% if backup_settings.auto_backup_enabled %}
+              {{ backup_settings.backup_day }}s at {{ backup_settings.backup_time|time:"H:i" }}
+              {% else %}
+              <span class="text-ink-light italic">None</span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="mt-6 pt-4 border-t border-border flex gap-2">
+        <form method="POST" action="{% url 'create_backup' %}" class="flex-1">
+          {% csrf_token %}
+          <button type="submit" class="w-full btn-ghost border border-navy text-navy hover:bg-navy/5 py-2 px-3 text-xs flex items-center justify-center gap-1.5 font-medium rounded-sm">
+            <i data-lucide="plus-circle" class="h-4 w-4"></i> Backup Now
+          </button>
+        </form>
+        <button type="button" onclick="openScheduleModal()" class="btn-ghost border border-border text-ink hover:bg-sand/35 py-2 px-3 text-xs flex items-center justify-center gap-1.5 font-medium rounded-sm" title="Configure automated backup schedule">
+          <i data-lucide="settings" class="h-4 w-4"></i> Schedule
+        </button>
+      </div>
+    </div>
+
+
+
+    <!-- Upload Backup File -->
+    <div id="upload-backup-card" class="section-card p-6 bg-white border border-border flex flex-col justify-between lg:col-span-2">
+      <div>
+        <div class="flex items-center gap-2 text-navy mb-4">
+          <i data-lucide="upload-cloud" class="h-5 w-5"></i>
+          <h3 class="font-serif text-lg text-ink font-semibold">Upload Local Backup</h3>
+        </div>
+        <p class="text-xs text-ink-muted mb-4">
+          Import an external database file (<code>.sqlite3</code>, <code>.db</code>) to restore data. Note that this file will be added to the registry.
+        </p>
+        
+        <form id="uploadForm" method="POST" action="{% url 'upload_backup' %}" enctype="multipart/form-data" class="space-y-4">
+          {% csrf_token %}
+          <div class="border-2 border-dashed border-border hover:border-navy/40 transition-colors p-4 rounded-sm bg-sand/10 flex flex-col items-center justify-center text-center">
+            <i data-lucide="file-up" class="h-8 w-8 text-ink-light/50 mb-2"></i>
+            <label for="backup_file" class="cursor-pointer">
+              <span class="text-xs font-semibold text-navy hover:underline">Choose file</span>
+              <input type="file" id="backup_file" name="backup_file" accept=".sqlite3,.db,.sqlite" class="hidden" required onchange="displayFileName(this)">
+            </label>
+            <p id="file-name-display" class="text-xs text-ink-muted font-mono mt-2 hidden bg-white py-1 px-3 border border-border rounded-sm max-w-full truncate"></p>
+            <p class="text-[9px] text-ink-light mt-1">Accepts .sqlite3, .db, .sqlite formats</p>
+          </div>
+          
+          <div class="flex justify-end">
+            <button type="submit" class="w-full btn-primary py-2 px-4 text-xs flex items-center justify-center gap-1.5">
+              <i data-lucide="upload" class="h-3.5 w-3.5"></i> Upload to Registry
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Safety Warning Alert -->
+  <div class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-sm text-xs flex gap-3 mb-8">
+    <i data-lucide="alert-triangle" class="h-5 w-5 shrink-0 mt-0.5 text-amber-600"></i>
+    <div>
+      <h4 class="font-semibold mb-1">CRITICAL RECOVERY NOTICE</h4>
+      <p class="leading-relaxed">
+        Restoring database files is a destructive task. It overwrites all tables in the active system with the data from the chosen backup. Make sure to download a backup of the current database before running any restoration procedures.
+      </p>
+    </div>
+  </div>
+
+  <!-- Backup History Table -->
+  <div class="section-card">
+    <div class="border-b border-border px-5 py-4 bg-sand/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <h3 class="font-serif text-lg text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="history" class="h-4 w-4 text-navy"></i> Backup Registry & History
+      </h3>
+      <span class="font-mono text-xs text-ink-muted whitespace-nowrap">{{ backups|length }} backups registered</span>
+    </div>
+
+    {% if backups %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border bg-sand/40 text-left">
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Backup Details</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Created Date</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Source Type</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">File Size</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Status</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {% for b in backups %}
+          <tr class="hover:bg-sand/30 transition-colors">
+            <td class="px-5 py-3.5 whitespace-nowrap">
+              <div class="font-mono text-xs font-semibold text-ink max-w-[300px] truncate" title="{{ b.filename }}">
+                {{ b.filename }}
+              </div>
+              <div class="text-[10px] text-ink-light flex items-center gap-1 mt-0.5">
+                <i data-lucide="user" class="h-3 w-3"></i> By: {% if b.created_by %}{{ b.created_by.get_full_name|default:b.created_by.username }}{% else %}System Scheduled{% endif %}
+              </div>
+            </td>
+            <td class="px-5 py-3.5 whitespace-nowrap text-ink-muted font-mono text-xs">
+              {{ b.created_at|date:"Y-m-d H:i:s" }}
+            </td>
+            <td class="px-5 py-3.5 whitespace-nowrap">
+              <span class="inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider
+                {% if b.backup_type == 'manual' %}bg-blue-50 text-blue-700 border border-blue-200
+                {% else %}bg-purple-50 text-purple-700 border border-purple-200{% endif %}">
+                {{ b.get_backup_type_display }}
+              </span>
+            </td>
+            <td class="px-5 py-3.5 whitespace-nowrap text-ink-muted font-mono text-xs">
+              {{ b.file_size|filesizeformat }}
+            </td>
+            <td class="px-5 py-3.5 whitespace-nowrap">
+              {% if b.status == 'success' %}
+              <span class="inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-green-50 text-green-700 border border-green-200">
+                <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span> Success
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200" title="{{ b.error_message }}">
+                <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span> Failed
+              </span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3.5 whitespace-nowrap text-right text-xs">
+              <div class="flex items-center justify-end gap-3 font-semibold">
+                {% if b.status == 'success' %}
+                <a href="{% url 'download_backup' b.backup_id %}" class="inline-flex items-center gap-1 text-navy hover:underline" title="Download SQLite backup file">
+                  <i data-lucide="download" class="h-3.5 w-3.5"></i> Download
+                </a>
+                
+                <button type="button" onclick="confirmRestore('{{ b.backup_id }}', '{{ b.filename|escapejs }}')" class="inline-flex items-center gap-1 text-amber-600 hover:text-amber-700 hover:underline" title="Restore database to this point">
+                  <i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i> Restore
+                </button>
+                {% endif %}
+                
+                <button type="button" onclick="confirmDelete('{{ b.backup_id }}')" class="inline-flex items-center gap-1 text-red-500 hover:text-red-700 hover:underline" title="Delete backup file">
+                  <i data-lucide="trash-2" class="h-3.5 w-3.5"></i> Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center">
+      <i data-lucide="database" class="mx-auto mb-3 h-10 w-10 text-ink-light/40"></i>
+      <p class="text-sm font-medium text-ink-muted">No database backups in the registry</p>
+      <p class="mt-1 text-xs text-ink-light">Generate or upload a database backup to see the history.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- RESTORE CONFIRMATION MODAL -->
+<div id="restore-confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4 animate-fade-in">
+  <div class="w-full max-w-md rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150">
+    <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
+      <h3 class="font-serif text-base text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="alert-triangle" class="h-5 w-5 text-red-600 animate-pulse"></i> Confirm Database Restore
+      </h3>
+      <button type="button" onclick="closeRestoreModal()" class="text-ink-light hover:text-ink">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+
+    <div class="space-y-4">
+      <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-sm text-xs flex gap-2">
+        <i data-lucide="alert-circle" class="h-5 w-5 shrink-0 mt-0.5 text-red-600"></i>
+        <div>
+          <p class="font-semibold mb-1 uppercase tracking-wide">CRITICAL WARNING:</p>
+          <p>You are about to overwrite the current database. All current information (reports, user registers, updates) since the time of the backup will be permanently lost.</p>
+        </div>
+      </div>
+      
+      <p class="text-xs text-ink-muted">
+        Are you sure you want to restore the system state from the backup file:
+      </p>
+      
+      <p class="font-mono text-xs text-ink font-semibold p-2 bg-sand/30 rounded border border-border break-all" id="restore-filename-display">
+        backup_file_name.sqlite3
+      </p>
+      
+      <form id="restore-form" method="POST" action="">
+        {% csrf_token %}
+        <div class="flex justify-end gap-2 mt-6 border-t border-border pt-4">
+          <button type="button" onclick="closeRestoreModal()" class="btn-ghost py-1.5 px-4 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="btn-primary bg-red-600 border-red-600 hover:bg-red-700 text-white py-1.5 px-4 text-xs flex items-center gap-1.5 font-semibold">
+            <i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i> Yes, Restore Now
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULE SETTINGS MODAL -->
+<div id="schedule-settings-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4 animate-fade-in">
+  <div class="w-full max-w-md rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150">
+    <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
+      <h3 class="font-serif text-base text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="calendar-days" class="h-5 w-5 text-navy"></i> Schedule Settings
+      </h3>
+      <button type="button" onclick="closeScheduleModal()" class="text-ink-light hover:text-ink">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    
+    <form method="POST" action="{% url 'update_backup_settings' %}" class="space-y-4">
+      {% csrf_token %}
+      <!-- Switch / Slider Toggle for auto backup -->
+      <div class="flex items-center justify-between border-b border-sand pb-4">
+        <div>
+          <label class="text-xs font-semibold text-ink font-medium">Enable Automated Backups</label>
+          <p class="text-[10px] text-ink-light">System will run auto-backups on schedule</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="auto_backup_enabled" name="auto_backup_enabled" {% if backup_settings.auto_backup_enabled %}checked{% endif %} class="sr-only peer" onchange="togglePickerDisplay(this.checked)">
+          <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-navy"></div>
+        </label>
+      </div>
+      
+      <div id="schedule-picker-container" class="space-y-3.5 {% if not backup_settings.auto_backup_enabled %}hidden{% endif %}">
+        <div>
+          <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Backup Day</label>
+          <select name="backup_day" class="form-input w-full py-1.5 px-3 text-xs" required>
+            <option value="Monday" {% if backup_settings.backup_day == 'Monday' %}selected{% endif %}>Monday</option>
+            <option value="Tuesday" {% if backup_settings.backup_day == 'Tuesday' %}selected{% endif %}>Tuesday</option>
+            <option value="Wednesday" {% if backup_settings.backup_day == 'Wednesday' %}selected{% endif %}>Wednesday</option>
+            <option value="Thursday" {% if backup_settings.backup_day == 'Thursday' %}selected{% endif %}>Thursday</option>
+            <option value="Friday" {% if backup_settings.backup_day == 'Friday' %}selected{% endif %}>Friday</option>
+            <option value="Saturday" {% if backup_settings.backup_day == 'Saturday' %}selected{% endif %}>Saturday</option>
+            <option value="Sunday" {% if backup_settings.backup_day == 'Sunday' %}selected{% endif %}>Sunday</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Backup Time</label>
+          <input type="time" name="backup_time" value="{{ backup_settings.backup_time|time:'H:i' }}" class="form-input w-full py-1.5 px-3 text-xs" required>
+        </div>
+      </div>
+      
+      <div class="flex justify-end gap-2 mt-6 border-t border-border pt-4">
+        <button type="button" onclick="closeScheduleModal()" class="btn-ghost py-1.5 px-4 text-xs font-semibold">Cancel</button>
+        <button type="submit" class="btn-primary py-1.5 px-4 text-xs flex items-center gap-1.5 font-semibold">
+          <i data-lucide="save" class="h-3.5 w-3.5"></i> Save Settings
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DELETE CONFIRMATION FORM (hidden) -->
+<form id="delete-form" method="POST" action="" class="hidden">
+  {% csrf_token %}
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function displayFileName(input) {
+    const display = document.getElementById('file-name-display');
+    if (input.files && input.files[0]) {
+      display.innerText = input.files[0].name;
+      display.classList.remove('hidden');
+    } else {
+      display.innerText = '';
+      display.classList.add('hidden');
+    }
+  }
+
+  function confirmRestore(backupId, filename) {
+    const modal = document.getElementById('restore-confirm-modal');
+    const display = document.getElementById('restore-filename-display');
+    const form = document.getElementById('restore-form');
+    
+    display.innerText = filename;
+    form.action = `/official/backup-recovery/restore/${backupId}/`;
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeRestoreModal() {
+    const modal = document.getElementById('restore-confirm-modal');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+  }
+
+  function confirmDelete(backupId) {
+    if (confirm('Are you sure you want to permanently delete this backup file? This action cannot be undone.')) {
+      const form = document.getElementById('delete-form');
+      form.action = `/official/backup-recovery/delete/${backupId}/`;
+      form.submit();
+    }
+  }
+
+  function togglePickerDisplay(enabled) {
+    const container = document.getElementById('schedule-picker-container');
+    if (enabled) {
+      container.classList.remove('hidden');
+    } else {
+      container.classList.add('hidden');
+    }
+  }
+
+  function openScheduleModal() {
+    const modal = document.getElementById('schedule-settings-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeScheduleModal() {
+    const modal = document.getElementById('schedule-settings-modal');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+  }
+</script>
+{% endblock %}

@@ -17,6 +17,9 @@
 <a href="{% url 'user_management' %}" class="sidebar-link active" data-target="users">
   <i data-lucide="users" class="h-4 w-4"></i> User Management
 </a>
+<a href="{% url 'backup_recovery' %}" class="sidebar-link" data-target="backup">
+  <i data-lucide="database" class="h-4 w-4"></i> Backup & Recovery
+</a>
 {% endblock %}
 
 {% block user_role_label %}{{ user.get_role_display }}{% endblock %}

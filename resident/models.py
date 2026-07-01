@@ -160,3 +160,58 @@ class ActivityLog(models.Model):
 
     def __str__(self):
         return f"ActivityLog #{self.log_id}: {self.user.username} - {self.action}"
+
+
+class DatabaseBackup(models.Model):
+    """Log of database backup operations."""
+    BACKUP_TYPE_CHOICES = (
+        ('manual', 'Manual'),
+        ('scheduled', 'Scheduled'),
+    )
+    STATUS_CHOICES = (
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+    )
+    
+    backup_id = models.AutoField(primary_key=True)
+    filename = models.CharField(max_length=255)
+    file_path = models.CharField(max_length=500)
+    file_size = models.BigIntegerField(null=True, blank=True)  # in bytes
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, db_column='created_by', related_name='backups_created')
+    backup_type = models.CharField(max_length=20, choices=BACKUP_TYPE_CHOICES, default='manual')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='success')
+    error_message = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'DatabaseBackup'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Backup {self.filename} - {self.status} ({self.created_at})"
+
+
+class BackupSettings(models.Model):
+    """Settings for database backup scheduling."""
+    DAY_CHOICES = (
+        ('Monday', 'Monday'),
+        ('Tuesday', 'Tuesday'),
+        ('Wednesday', 'Wednesday'),
+        ('Thursday', 'Thursday'),
+        ('Friday', 'Friday'),
+        ('Saturday', 'Saturday'),
+        ('Sunday', 'Sunday'),
+    )
+    settings_id = models.AutoField(primary_key=True)
+    auto_backup_enabled = models.BooleanField(default=True)
+    backup_day = models.CharField(max_length=20, choices=DAY_CHOICES, default='Sunday')
+    backup_time = models.TimeField(default='02:00:00')  # e.g., 2:00 AM
+    last_run = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'BackupSettings'
+
+    def __str__(self):
+        status = "enabled" if self.auto_backup_enabled else "disabled"
+        return f"Backup schedule {status} (on {self.backup_day} at {self.backup_time})"

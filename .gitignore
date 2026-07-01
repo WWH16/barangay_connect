@@ -220,3 +220,4 @@ __marimo__/
 /resident/migrations
 /media
 /staticfiles
+/backups

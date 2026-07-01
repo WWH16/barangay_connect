@@ -2,8 +2,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.contrib import messages
-from django.http import JsonResponse
-from resident.models import User, Complaint, Incident, EvidenceFile, CaseAssignment, Notification, ActivityLog
+from django.http import JsonResponse, FileResponse, Http404
+import os
+from django.utils import timezone
+from django.conf import settings
+from resident.models import User, Complaint, Incident, EvidenceFile, CaseAssignment, Notification, ActivityLog, DatabaseBackup, BackupSettings
 from barangay_app.email_utils import send_case_assigned_email, send_status_update_email, send_test_email, send_resident_notification
 
 User = get_user_model()
@@ -628,3 +631,227 @@ def activity_log_view(request):
     return render(request, 'barangay_app/activity_log.html', {
         'logs': logs,
     })
+
+
+@login_required(login_url='login')
+def backup_recovery_view(request):
+    """Backup & Recovery management dashboard. Only accessible by officials."""
+    if request.user.role != 'official':
+        messages.error(request, 'Access denied. Only Barangay Officials can access Backup & Recovery.')
+        return redirect('staff_dashboard')
+        
+    # Passively check if we need to run the weekly scheduled backup
+    from .backup_utils import check_and_run_weekly_backup, get_backup_settings
+    try:
+        check_and_run_weekly_backup()
+    except Exception:
+        # Don't fail the page view if weekly scheduled check fails
+        pass
+
+    backups = DatabaseBackup.objects.all().select_related('created_by')
+    settings_obj = get_backup_settings()
+    
+    # Calculate active DB size
+    db_config = settings.DATABASES['default']
+    active_db_path = db_config['NAME']
+    active_db_size = 0
+    if os.path.exists(active_db_path):
+        active_db_size = os.path.getsize(active_db_path)
+        
+    context = {
+        'user': request.user,
+        'backups': backups,
+        'active_db_size': active_db_size,
+        'backup_settings': settings_obj,
+    }
+    return render(request, 'barangay_app/backup_recovery.html', context)
+
+
+@login_required(login_url='login')
+def update_backup_settings_view(request):
+    """Update scheduled backup configuration."""
+    if request.user.role != 'official':
+        messages.error(request, 'Access denied.')
+        return redirect('staff_dashboard')
+        
+    if request.method == 'POST':
+        auto_backup_enabled = request.POST.get('auto_backup_enabled') == 'on'
+        day = request.POST.get('backup_day')
+        time_str = request.POST.get('backup_time')
+        
+        from .backup_utils import get_backup_settings
+        settings_obj = get_backup_settings()
+        
+        try:
+            settings_obj.auto_backup_enabled = auto_backup_enabled
+            
+            if auto_backup_enabled:
+                if day and time_str:
+                    import datetime
+                    time_parts = time_str.split(':')
+                    hour = int(time_parts[0])
+                    minute = int(time_parts[1])
+                    time_obj = datetime.time(hour, minute)
+                    
+                    settings_obj.backup_day = day
+                    settings_obj.backup_time = time_obj
+                    msg = f"Automated backups enabled. Schedule set to {day}s at {time_str}."
+                else:
+                    raise ValueError("Backup day and time are required when automated backups are enabled.")
+            else:
+                msg = "Automated backups disabled."
+                
+            settings_obj.save()
+            
+            # Log action
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Updated backup settings: {msg}"
+            )
+            messages.success(request, msg)
+        except Exception as e:
+            messages.error(request, f"Failed to update backup schedule: {str(e)}")
+            
+    return redirect('backup_recovery')
+
+
+@login_required(login_url='login')
+def create_backup_view(request):
+    """Create a manual database backup."""
+    if request.user.role != 'official':
+        messages.error(request, 'Access denied.')
+        return redirect('staff_dashboard')
+        
+    if request.method == 'POST':
+        from .backup_utils import perform_db_backup
+        backup, error = perform_db_backup(user=request.user, backup_type='manual')
+        if error:
+            messages.error(request, f'Failed to create backup: {error}')
+        else:
+            messages.success(request, f'Successfully created database backup: {backup.filename}')
+            
+    return redirect('backup_recovery')
+
+
+@login_required(login_url='login')
+def download_backup_view(request, backup_id):
+    """Download a database backup file."""
+    if request.user.role != 'official':
+        messages.error(request, 'Access denied.')
+        return redirect('staff_dashboard')
+        
+    backup = get_object_or_404(DatabaseBackup, backup_id=backup_id)
+    if not os.path.exists(backup.file_path):
+        raise Http404("Backup file not found on disk.")
+        
+    response = FileResponse(open(backup.file_path, 'rb'), content_type='application/x-sqlite3')
+    response['Content-Disposition'] = f'attachment; filename="{backup.filename}"'
+    return response
+
+
+@login_required(login_url='login')
+def restore_backup_view(request, backup_id):
+    """Restore database from a backup."""
+    if request.user.role != 'official':
+        messages.error(request, 'Access denied.')
+        return redirect('staff_dashboard')
+        
+    if request.method == 'POST':
+        backup = get_object_or_404(DatabaseBackup, backup_id=backup_id)
+        try:
+            from .backup_utils import restore_db_backup
+            restore_db_backup(backup, request.user)
+            messages.success(request, f'Database successfully restored to backup: {backup.filename}.')
+        except Exception as e:
+            messages.error(request, f'Failed to restore database: {str(e)}')
+            
+    return redirect('backup_recovery')
+
+
+@login_required(login_url='login')
+def delete_backup_view(request, backup_id):
+    """Delete a database backup file and record."""
+    if request.user.role != 'official':
+        messages.error(request, 'Access denied.')
+        return redirect('staff_dashboard')
+        
+    if request.method == 'POST':
+        backup = get_object_or_404(DatabaseBackup, backup_id=backup_id)
+        filename = backup.filename
+        
+        # Delete file from disk if it exists
+        if os.path.exists(backup.file_path):
+            try:
+                os.remove(backup.file_path)
+            except Exception as e:
+                messages.warning(request, f"Backup record deleted, but failed to delete file from disk: {str(e)}")
+        
+        # Delete record
+        backup.delete()
+        
+        # Log action
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Deleted database backup record: {filename}"
+        )
+        
+        messages.success(request, f'Backup {filename} deleted successfully.')
+        
+    return redirect('backup_recovery')
+
+
+@login_required(login_url='login')
+def upload_backup_view(request):
+    """Upload an external backup database file and save/register it."""
+    if request.user.role != 'official':
+        messages.error(request, 'Access denied.')
+        return redirect('staff_dashboard')
+        
+    if request.method == 'POST' and request.FILES.get('backup_file'):
+        backup_file = request.FILES['backup_file']
+        
+        # Validate file extension
+        ext = os.path.splitext(backup_file.name)[1].lower()
+        if ext not in ['.sqlite3', '.db', '.sqlite']:
+            messages.error(request, 'Invalid file type. Only .sqlite3, .db, or .sqlite files are allowed.')
+            return redirect('backup_recovery')
+            
+        # Ensure backup dir exists
+        backups_dir = os.path.join(settings.BASE_DIR, 'backups')
+        os.makedirs(backups_dir, exist_ok=True)
+        
+        # Save file to disk
+        timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"uploaded_backup_{timestamp}{ext}"
+        file_path = os.path.join(backups_dir, filename)
+        
+        try:
+            with open(file_path, 'wb+') as destination:
+                for chunk in backup_file.chunks():
+                    destination.write(chunk)
+            
+            file_size = os.path.getsize(file_path)
+            
+            # Create DatabaseBackup record
+            backup = DatabaseBackup.objects.create(
+                filename=filename,
+                file_path=file_path,
+                file_size=file_size,
+                created_by=request.user,
+                backup_type='manual',
+                status='success'
+            )
+            
+            # Log action
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f"Uploaded database backup file: {filename}"
+            )
+            
+            messages.success(request, f'Backup file uploaded successfully as {filename}. You can now restore or download it.')
+        except Exception as e:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            messages.error(request, f'Failed to upload backup file: {str(e)}')
+            
+    return redirect('backup_recovery')
