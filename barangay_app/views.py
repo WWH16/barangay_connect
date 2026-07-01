@@ -648,7 +648,13 @@ def backup_recovery_view(request):
         # Don't fail the page view if weekly scheduled check fails
         pass
 
-    backups = DatabaseBackup.objects.all().select_related('created_by')
+    all_backups = DatabaseBackup.objects.all().select_related('created_by').order_by('-created_at')
+    backups = []
+    for b in all_backups:
+        if os.path.exists(b.file_path):
+            backups.append(b)
+        else:
+            b.delete()
     settings_obj = get_backup_settings()
     
     # Calculate active DB size
@@ -758,10 +764,36 @@ def restore_backup_view(request, backup_id):
         
     if request.method == 'POST':
         backup = get_object_or_404(DatabaseBackup, backup_id=backup_id)
+        
+        # Save current session to preserve login status
+        session_key = request.session.session_key
+        session_record = None
+        if session_key:
+            try:
+                from django.contrib.sessions.models import Session
+                session_record = Session.objects.get(session_key=session_key)
+            except Exception:
+                pass
+
         try:
             from .backup_utils import restore_db_backup
             restore_db_backup(backup, request.user)
-            messages.success(request, f'Database successfully restored to backup: {backup.filename}.')
+            # Programmatically migrate to ensure the restored DB schema matches the current codebase
+            from django.core.management import call_command
+            call_command('migrate', interactive=False)
+            
+            # Re-save the session record in the restored database
+            if session_record:
+                try:
+                    session_record.save()
+                except Exception:
+                    pass
+                    
+            messages.success(request, f'Database successfully restored to backup: {backup.filename} and schema was updated.')
+        except FileNotFoundError as e:
+            # Delete stale record from database registry since the file is missing from disk
+            backup.delete()
+            messages.error(request, f'Restore failed: The backup file was not found on disk. The stale registry record has been cleaned up.')
         except Exception as e:
             messages.error(request, f'Failed to restore database: {str(e)}')
             
@@ -802,7 +834,7 @@ def delete_backup_view(request, backup_id):
 
 @login_required(login_url='login')
 def upload_backup_view(request):
-    """Upload an external backup database file and save/register it."""
+    """Upload an external database file and immediately restore it, without registering it in the backup registry."""
     if request.user.role != 'official':
         messages.error(request, 'Access denied.')
         return redirect('staff_dashboard')
@@ -816,43 +848,62 @@ def upload_backup_view(request):
             messages.error(request, 'Invalid file type. Only .sqlite3, .db, or .sqlite files are allowed.')
             return redirect('backup_recovery')
             
-        # Ensure backup dir exists
-        backups_dir = os.path.join(settings.BASE_DIR, 'backups')
-        os.makedirs(backups_dir, exist_ok=True)
+        # Get active database path
+        db_config = settings.DATABASES['default']
+        active_db_path = db_config['NAME']
         
-        # Save file to disk
-        timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"uploaded_backup_{timestamp}{ext}"
-        file_path = os.path.join(backups_dir, filename)
+        # Save current session to preserve login status
+        session_key = request.session.session_key
+        session_record = None
+        if session_key:
+            try:
+                from django.contrib.sessions.models import Session
+                session_record = Session.objects.get(session_key=session_key)
+            except Exception:
+                pass
+                
+        import tempfile
+        import shutil
+        from django.db import connections
         
+        temp_file_fd, temp_file_path = tempfile.mkstemp(suffix=ext)
         try:
-            with open(file_path, 'wb+') as destination:
+            with os.fdopen(temp_file_fd, 'wb') as tmp:
                 for chunk in backup_file.chunks():
-                    destination.write(chunk)
+                    tmp.write(chunk)
             
-            file_size = os.path.getsize(file_path)
+            # 1. Close all active database connections to avoid file lock issues
+            connections.close_all()
             
-            # Create DatabaseBackup record
-            backup = DatabaseBackup.objects.create(
-                filename=filename,
-                file_path=file_path,
-                file_size=file_size,
-                created_by=request.user,
-                backup_type='manual',
-                status='success'
-            )
+            # 2. Copy uploaded file over active database
+            shutil.copy2(temp_file_path, active_db_path)
             
-            # Log action
+            # Programmatically migrate to ensure the restored DB schema matches the current codebase
+            from django.core.management import call_command
+            call_command('migrate', interactive=False)
+            
+            # Re-save the session record in the restored database
+            if session_record:
+                try:
+                    session_record.save()
+                except Exception:
+                    pass
+                    
+            # 3. Create activity log inside the newly restored database
             ActivityLog.objects.create(
                 user=request.user,
-                action=f"Uploaded database backup file: {filename}"
+                action=f"Restored database directly from uploaded file: {backup_file.name}"
             )
             
-            messages.success(request, f'Backup file uploaded successfully as {filename}. You can now restore or download it.')
+            messages.success(request, f'Database successfully restored to the uploaded file: {backup_file.name}.')
         except Exception as e:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            messages.error(request, f'Failed to upload backup file: {str(e)}')
+            messages.error(request, f'Failed to restore database from uploaded file: {str(e)}')
+        finally:
+            if os.path.exists(temp_file_path):
+                try:
+                    os.remove(temp_file_path)
+                except Exception:
+                    pass
             
     return redirect('backup_recovery')
 

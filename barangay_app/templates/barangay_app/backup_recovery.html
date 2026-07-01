@@ -115,7 +115,7 @@
           <h3 class="font-serif text-lg text-ink font-semibold">Upload Local Backup</h3>
         </div>
         <p class="text-xs text-ink-muted mb-4">
-          Import an external database file (<code>.sqlite3</code>, <code>.db</code>) to restore data. Note that this file will be added to the registry.
+          Import an external database file (<code>.sqlite3</code>, <code>.db</code>) to restore data directly. This will immediately replace the active database.
         </p>
         
         <form id="uploadForm" method="POST" action="{% url 'upload_backup' %}" enctype="multipart/form-data" class="space-y-4">
@@ -132,7 +132,7 @@
           
           <div class="flex justify-end">
             <button type="submit" class="w-full btn-primary py-2 px-4 text-xs flex items-center justify-center gap-1.5">
-              <i data-lucide="upload" class="h-3.5 w-3.5"></i> Upload to Registry
+              <i data-lucide="upload" class="h-3.5 w-3.5"></i> Upload & Restore Directly
             </button>
           </div>
         </form>
