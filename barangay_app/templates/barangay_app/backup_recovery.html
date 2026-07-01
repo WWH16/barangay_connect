@@ -124,7 +124,12 @@
             <i data-lucide="file-up" class="h-8 w-8 text-ink-light/50 mb-2"></i>
             <span class="text-xs font-semibold text-navy hover:underline">Choose file</span>
             <input type="file" id="backup_file" name="backup_file" accept=".sqlite3,.db,.sqlite" class="hidden" required onchange="displayFileName(this)">
-            <p id="file-name-display" class="text-xs text-ink-muted font-mono mt-2 hidden bg-white py-1 px-3 border border-border rounded-sm max-w-full truncate"></p>
+            <div id="file-name-container" class="mt-2 hidden w-full max-w-xs bg-white py-1.5 px-3 border border-border rounded-sm flex items-center justify-between gap-2">
+              <span id="file-name-display" class="text-xs text-ink-muted font-mono truncate"></span>
+              <button type="button" onclick="clearSelectedFile(event)" class="text-red-500 hover:text-red-700 transition-colors p-0.5 rounded hover:bg-red-50" title="Remove selected file">
+                <i data-lucide="x" class="h-3.5 w-3.5"></i>
+              </button>
+            </div>
             <p class="text-[9px] text-ink-light mt-1">Accepts .sqlite3, .db, .sqlite formats</p>
           </label>
           
@@ -440,17 +445,32 @@
 {% block extra_js %}
 <script>
   function displayFileName(input) {
+    const container = document.getElementById('file-name-container');
     const display = document.getElementById('file-name-display');
     const submitBtn = document.getElementById('upload-restore-btn');
     if (input.files && input.files[0]) {
       display.innerText = input.files[0].name;
-      display.classList.remove('hidden');
+      container.classList.remove('hidden');
+      container.classList.add('flex');
       if (submitBtn) submitBtn.disabled = false;
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
     } else {
       display.innerText = '';
-      display.classList.add('hidden');
+      container.classList.remove('flex');
+      container.classList.add('hidden');
       if (submitBtn) submitBtn.disabled = true;
     }
+  }
+
+  function clearSelectedFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const fileInput = document.getElementById('backup_file');
+    fileInput.value = '';
+    displayFileName(fileInput);
   }
 
   function confirmRestore(backupId, filename) {
