@@ -629,6 +629,49 @@
   </div>
 </div>
 
+<!-- DELETE CONFIRMATION MODAL -->
+<div id="deleteConfirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4 animate-fade-in">
+  <div class="w-full max-w-md rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150 relative">
+    <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
+      <h3 class="font-serif text-lg text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="alert-triangle" class="h-5 w-5 text-red-500"></i> Confirm Deletion
+      </h3>
+      <button type="button" onclick="closeDeleteConfirmModal()" class="text-ink-light hover:text-ink">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+
+    <div class="space-y-4">
+      <p class="text-sm text-ink-muted">
+        Are you sure you want to permanently delete this record? This action cannot be undone.
+      </p>
+      
+      <!-- Record Info Card -->
+      <div class="bg-red-50/40 border border-red-100 rounded-sm p-4 text-xs space-y-2">
+        <div class="flex justify-between border-b border-red-100/50 pb-1.5">
+          <span class="font-semibold text-ink-muted uppercase tracking-wider text-[10px]">Record ID</span>
+          <span id="delete-record-id" class="font-mono text-ink font-bold"></span>
+        </div>
+        <div class="flex justify-between border-b border-red-100/50 pb-1.5">
+          <span class="font-semibold text-ink-muted uppercase tracking-wider text-[10px]">Type</span>
+          <span id="delete-record-type" class="text-ink font-medium capitalize"></span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="font-semibold text-ink-muted uppercase tracking-wider text-[10px]">Title</span>
+          <span id="delete-record-title" class="font-medium text-ink break-words"></span>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-6 border-t border-border pt-4">
+        <button type="button" onclick="closeDeleteConfirmModal()" class="btn-ghost py-1.5 px-4 text-xs font-semibold">Cancel</button>
+        <button type="button" onclick="submitDeleteReport(this)" class="btn-primary bg-red-600 border-red-600 hover:bg-red-700 text-white py-1.5 px-4 text-xs flex items-center gap-1.5 font-semibold">
+          <i data-lucide="trash-2" class="h-3.5 w-3.5"></i> Delete Record
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- DELETE REPORT FORM (hidden) -->
 <form id="delete-report-form" method="POST" action="" class="hidden">
   {% csrf_token %}
@@ -852,11 +895,56 @@
     const type = tr.dataset.type;
     const title = tr.dataset.displayTitle;
     
-    if (confirm('Are you sure you want to permanently delete this ' + type + ' "' + title + '" (ID: #' + id + ')? This action cannot be undone.')) {
-      const form = document.getElementById('delete-report-form');
-      form.action = '/staff/delete-report/' + type + '/' + id + '/';
-      form.submit();
+    // Set text details in the modal
+    document.getElementById('delete-record-id').innerText = '#' + id;
+    document.getElementById('delete-record-type').innerText = type.charAt(0).toUpperCase() + type.slice(1);
+    document.getElementById('delete-record-title').innerText = title;
+    
+    // Setup form action
+    const form = document.getElementById('delete-report-form');
+    form.action = '/staff/delete-report/' + type + '/' + id + '/';
+    
+    // Show the custom modal
+    const modal = document.getElementById('deleteConfirmModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // Initialize lucide icons if defined
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons();
     }
+  }
+
+  function closeDeleteConfirmModal() {
+    const modal = document.getElementById('deleteConfirmModal');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+  }
+
+  function submitDeleteReport(button) {
+    if (button) {
+      button.disabled = true;
+      button.style.opacity = '0.75';
+      button.style.cursor = 'not-allowed';
+      
+      const spinnerHtml = `<svg style="display:inline-block;animation:spin 1s linear infinite;margin-right:8px;width:14px;height:14px;vertical-align:middle;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
+      button.innerHTML = spinnerHtml + 'Deleting...';
+    }
+    
+    // Disable all buttons in the modal to prevent double submit or closing
+    const modal = document.getElementById('deleteConfirmModal');
+    if (modal) {
+      const buttons = modal.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn !== button) {
+          btn.classList.add('opacity-50', 'pointer-events-none');
+        }
+      });
+    }
+
+    const form = document.getElementById('delete-report-form');
+    form.submit();
   }
 
 
