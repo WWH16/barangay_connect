@@ -220,7 +220,7 @@
                 </button>
                 {% endif %}
                 
-                <button type="button" onclick="confirmDelete('{{ b.backup_id }}')" class="inline-flex items-center gap-1 text-red-500 hover:text-red-700 hover:underline" title="Delete backup file">
+                <button type="button" onclick="confirmDelete('{{ b.backup_id }}', '{{ b.filename|escapejs }}')" class="inline-flex items-center gap-1 text-red-500 hover:text-red-700 hover:underline" title="Delete backup file">
                   <i data-lucide="trash-2" class="h-3.5 w-3.5"></i> Delete
                 </button>
               </div>
@@ -301,6 +301,48 @@
   </div>
 </div>
 
+<!-- DELETE CONFIRMATION MODAL -->
+<div id="delete-confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4 animate-fade-in">
+  <div class="w-full max-w-md rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150">
+    <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
+      <h3 class="font-serif text-base text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="trash-2" class="h-5 w-5 text-red-600"></i> Confirm Delete Backup
+      </h3>
+      <button type="button" onclick="closeDeleteModal()" class="text-ink-light hover:text-ink">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+
+    <div class="space-y-4">
+      <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-sm text-xs flex gap-2">
+        <i data-lucide="alert-circle" class="h-5 w-5 shrink-0 mt-0.5 text-red-600"></i>
+        <div>
+          <p class="font-semibold mb-1 uppercase tracking-wide">WARNING:</p>
+          <p>This action is permanent and cannot be undone. The selected backup file and its registry entry will be deleted from the system.</p>
+        </div>
+      </div>
+      
+      <p class="text-xs text-ink-muted">
+        Are you sure you want to permanently delete the backup file:
+      </p>
+      
+      <p class="font-mono text-xs text-ink font-semibold p-2 bg-sand/30 rounded border border-border break-all" id="delete-filename-display">
+        backup_file_name.sqlite3
+      </p>
+      
+      <form id="delete-confirm-form" method="POST" action="">
+        {% csrf_token %}
+        <div class="flex justify-end gap-2 mt-6 border-t border-border pt-4">
+          <button type="button" onclick="closeDeleteModal()" class="btn-ghost py-1.5 px-4 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="btn-primary bg-red-600 border-red-600 hover:bg-red-700 text-white py-1.5 px-4 text-xs flex items-center gap-1.5 font-semibold">
+            <i data-lucide="trash-2" class="h-3.5 w-3.5"></i> Yes, Delete Now
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- SCHEDULE SETTINGS MODAL -->
 <div id="schedule-settings-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4 animate-fade-in">
   <div class="w-full max-w-md rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150">
@@ -356,10 +398,6 @@
   </div>
 </div>
 
-<!-- DELETE CONFIRMATION FORM (hidden) -->
-<form id="delete-form" method="POST" action="" class="hidden">
-  {% csrf_token %}
-</form>
 {% endblock %}
 
 {% block extra_js %}
@@ -393,12 +431,22 @@
     modal.classList.add('hidden');
   }
 
-  function confirmDelete(backupId) {
-    if (confirm('Are you sure you want to permanently delete this backup file? This action cannot be undone.')) {
-      const form = document.getElementById('delete-form');
-      form.action = `/official/backup-recovery/delete/${backupId}/`;
-      form.submit();
-    }
+  function confirmDelete(backupId, filename) {
+    const modal = document.getElementById('delete-confirm-modal');
+    const display = document.getElementById('delete-filename-display');
+    const form = document.getElementById('delete-confirm-form');
+    
+    display.innerText = filename;
+    form.action = `/official/backup-recovery/delete/${backupId}/`;
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeDeleteModal() {
+    const modal = document.getElementById('delete-confirm-modal');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
   }
 
   function togglePickerDisplay(enabled) {
