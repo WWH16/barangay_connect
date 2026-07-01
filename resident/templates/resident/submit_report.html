@@ -372,6 +372,9 @@
       
       document.getElementById('inc-coords').innerText = coordStr;
       document.getElementById('inc-coord-display').classList.remove('hidden');
+
+      // Close the modal
+      closeMapModal();
     }
     map.invalidateSize();
   }
