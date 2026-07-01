@@ -131,7 +131,7 @@
           </div>
           
           <div class="flex justify-end">
-            <button type="button" onclick="confirmUploadRestore()" class="w-full btn-primary py-2 px-4 text-xs flex items-center justify-center gap-1.5">
+            <button type="button" id="upload-restore-btn" onclick="confirmUploadRestore()" class="w-full btn-primary py-2 px-4 text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none" disabled>
               <i data-lucide="upload" class="h-3.5 w-3.5"></i> Upload & Restore Directly
             </button>
           </div>
@@ -443,12 +443,15 @@
 <script>
   function displayFileName(input) {
     const display = document.getElementById('file-name-display');
+    const submitBtn = document.getElementById('upload-restore-btn');
     if (input.files && input.files[0]) {
       display.innerText = input.files[0].name;
       display.classList.remove('hidden');
+      if (submitBtn) submitBtn.disabled = false;
     } else {
       display.innerText = '';
       display.classList.add('hidden');
+      if (submitBtn) submitBtn.disabled = true;
     }
   }
 
