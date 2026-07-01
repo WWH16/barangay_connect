@@ -14,6 +14,7 @@ def verify_recaptcha(request):
     """Verify the reCAPTCHA v3 token."""
     recaptcha_response = request.POST.get('g-recaptcha-response')
     if not recaptcha_response:
+        print("reCAPTCHA Error: No g-recaptcha-response token in POST request.")
         return False
         
     data = {
@@ -24,10 +25,12 @@ def verify_recaptcha(request):
     try:
         r = requests.post('https://www.google.com/recaptcha/api/siteverify', data=data)
         result = r.json()
+        print(f"reCAPTCHA raw verification result: {result}")
         # Ensure it was successful and the score is decent (>= 0.5)
         if result.get('success') and result.get('score', 0) >= 0.5:
             return True
-    except Exception:
+    except Exception as e:
+        print(f"reCAPTCHA verification exception occurred: {e}")
         pass
     
     return False
