@@ -96,7 +96,7 @@
         <form method="POST" action="{% url 'create_backup' %}" class="flex-1">
           {% csrf_token %}
           <button type="submit" class="w-full btn-ghost border border-navy text-navy hover:bg-navy/5 py-2 px-3 text-xs flex items-center justify-center gap-1.5 font-medium rounded-sm">
-            <i data-lucide="plus-circle" class="h-4 w-4"></i> Backup Now
+            <i data-lucide="plus-circle" class="h-4 w-4"></i> Generate Backup File
           </button>
         </form>
         <button type="button" onclick="openScheduleModal()" class="btn-ghost border border-border text-ink hover:bg-sand/35 py-2 px-3 text-xs flex items-center justify-center gap-1.5 font-medium rounded-sm" title="Configure automated backup schedule">
