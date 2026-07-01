@@ -54,7 +54,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="w-full p-8">
+<div class="w-full p-4 sm:p-8">
   <div class="mb-8">
     <p class="mb-1.5 font-mono text-xs uppercase tracking-[0.15em] text-ink-muted">MANAGEMENT</p>
     <h1 class="font-serif text-3xl text-ink">Case Monitoring</h1>
@@ -142,7 +142,7 @@
     </div>
 
     {% if reports %}
-    <div class="overflow-x-auto">
+    <div class="hidden lg:block overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-border bg-sand/40 text-left">
@@ -152,6 +152,7 @@
             <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Assigned To</th>
             <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Remarks</th>
             <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted">Status</th>
+            <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-muted text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-border">
@@ -164,7 +165,19 @@
               data-resident="{{ report.resident.get_full_name|default:report.resident.username|lower }}"
               data-assigned="{% if report.assigned_to %}{{ report.assigned_to.get_full_name|default:report.assigned_to.username|lower }}{% else %}unassigned{% endif %}"
               data-status="{{ report.status|lower }}"
-              data-date="{{ report.created_at|date:'Y-m-d' }}">
+              data-date="{{ report.created_at|date:'Y-m-d' }}"
+              data-display-title="{{ report.title }}"
+              data-original-desc="{{ report.description }}"
+              data-category="{{ report.category }}"
+              data-location="{% if report.report_type == 'incident' %}{{ report.location }}{% endif %}"
+              data-lat="{{ report.latitude|default:'' }}"
+              data-lng="{{ report.longitude|default:'' }}"
+              data-evidence="{% if report.evidence %}{{ report.evidence.url }}{% endif %}"
+              data-assigned-id="{% if report.assigned_to %}{{ report.assigned_to.user_id }}{% endif %}"
+              data-remarks="{{ report.remarks }}"
+              data-resident-name="{{ report.resident.get_full_name|default:report.resident.username }}"
+              data-resident-email="{{ report.resident.email }}"
+              data-resident-phone="{{ report.resident.contact_number }}">
             <td class="px-5 py-3 max-w-md">
               <p class="font-medium text-ink">{{ report.title }}</p>
               <p class="mt-0.5 text-xs text-ink-muted">{{ report.description }}</p>
@@ -280,11 +293,127 @@
                 </span>
               {% endif %}
             </td>
+            <td class="px-5 py-3 text-right whitespace-nowrap">
+              <div class="flex items-center justify-end gap-3 text-xs font-semibold">
+                <button type="button" onclick="openViewDetailsModal(this)" class="text-navy hover:underline flex items-center gap-1" title="View details and evidence">
+                  <i data-lucide="eye" class="h-3.5 w-3.5"></i> View
+                </button>
+                
+                {% if user.is_official or report.assigned_to == user %}
+                <button type="button" onclick="openEditReportModal(this)" class="text-amber-600 hover:text-amber-700 hover:underline flex items-center gap-1" title="Edit details">
+                  <i data-lucide="pencil" class="h-3.5 w-3.5"></i> Edit
+                </button>
+                {% endif %}
+                
+                {% if user.is_official %}
+                <button type="button" onclick="confirmDeleteReport(this)" class="text-red-500 hover:text-red-700 hover:underline flex items-center gap-1" title="Delete report">
+                  <i data-lucide="trash-2" class="h-3.5 w-3.5"></i> Delete
+                </button>
+                {% endif %}
+              </div>
+            </td>
           </tr>
 
           {% endfor %}
         </tbody>
       </table>
+    </div>
+
+    <!-- Mobile Cards List (visible only on mobile) -->
+    <div class="block lg:hidden divide-y divide-border" id="mobile-cards-container">
+      {% for report in reports %}
+      <div class="report-row p-4 space-y-3.5 transition-colors hover:bg-sand/30"
+          data-id="{{ report.id }}"
+          data-type="{{ report.report_type }}"
+          data-title="{{ report.title|lower }}" 
+          data-desc="{{ report.description|lower }}" 
+          data-resident="{{ report.resident.get_full_name|default:report.resident.username|lower }}"
+          data-assigned="{% if report.assigned_to %}{{ report.assigned_to.get_full_name|default:report.assigned_to.username|lower }}{% else %}unassigned{% endif %}"
+          data-status="{{ report.status|lower }}"
+          data-date="{{ report.created_at|date:'Y-m-d' }}"
+          data-display-title="{{ report.title }}"
+          data-original-desc="{{ report.description }}"
+          data-category="{{ report.category }}"
+          data-location="{% if report.report_type == 'incident' %}{{ report.location }}{% endif %}"
+          data-lat="{{ report.latitude|default:'' }}"
+          data-lng="{{ report.longitude|default:'' }}"
+          data-evidence="{% if report.evidence %}{{ report.evidence.url }}{% endif %}"
+          data-assigned-id="{% if report.assigned_to %}{{ report.assigned_to.user_id }}{% endif %}"
+          data-remarks="{{ report.remarks }}"
+          data-resident-name="{{ report.resident.get_full_name|default:report.resident.username }}"
+          data-resident-email="{{ report.resident.email }}"
+          data-resident-phone="{{ report.resident.contact_number }}">
+          
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span class="inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider border
+                {% if report.report_type == 'complaint' %}bg-rose-50 text-rose-700 border-rose-200
+                {% else %}bg-amber-50 text-amber-700 border-amber-200{% endif %}">
+                {{ report.report_type }}
+              </span>
+              <h4 class="font-semibold text-ink text-sm mt-1.5">{{ report.title }}</h4>
+            </div>
+            <span class="status-badge shrink-0 {% if report.status == 'Pending' %}status-pending{% elif report.status == 'In Progress' %}status-in-progress{% else %}status-resolved{% endif %} border text-[10px]">
+              {{ report.status|lower }}
+            </span>
+          </div>
+
+          <p class="text-xs text-ink-muted leading-relaxed line-clamp-2">{{ report.description }}</p>
+          {% if report.latitude and report.longitude %}
+            <button type="button" onclick="openViewMapModal({{ report.id }}, {{ report.latitude }}, {{ report.longitude }}, '{{ report.title|escapejs }}')" class="mt-2 inline-flex items-center gap-1.5 text-[11px] text-navy font-semibold hover:underline bg-navy/5 px-2 py-1 rounded-sm border border-navy/20">
+              <i data-lucide="map-pin" class="h-3 w-3"></i> View on Map
+            </button>
+          {% endif %}
+
+          <div class="grid grid-cols-2 gap-2 text-xs pt-1.5 border-t border-sand/40">
+            <div>
+              <span class="text-ink-light block text-[9px] uppercase font-semibold">Submitted By</span>
+              <span class="font-medium text-ink">{{ report.resident.get_full_name|default:report.resident.username }}</span>
+            </div>
+            <div>
+              <span class="text-ink-light block text-[9px] uppercase font-semibold">Date Filed</span>
+              <span class="font-mono text-ink">{{ report.created_at|date:"M d, Y" }}</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span class="text-ink-light block text-[9px] uppercase font-semibold">Assigned To</span>
+              <span class="font-medium text-ink">
+                {% if report.assigned_to %}
+                  {{ report.assigned_to.get_full_name|default:report.assigned_to.username }}
+                {% else %}
+                  <span class="text-ink-light italic">Unassigned</span>
+                {% endif %}
+              </span>
+            </div>
+            <div>
+              <span class="text-ink-light block text-[9px] uppercase font-semibold">Remarks</span>
+              <span class="font-medium text-ink truncate block">
+                {{ report.remarks|default:"None" }}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-2.5 border-t border-border/60 text-xs font-semibold">
+            <button type="button" onclick="openViewDetailsModal(this)" class="text-navy hover:underline flex items-center gap-1" title="View details and evidence">
+              <i data-lucide="eye" class="h-3.5 w-3.5"></i> View Details
+            </button>
+            
+            {% if user.is_official or report.assigned_to == user %}
+            <button type="button" onclick="openEditReportModal(this)" class="text-amber-600 hover:text-amber-700 hover:underline flex items-center gap-1" title="Edit details">
+              <i data-lucide="pencil" class="h-3.5 w-3.5"></i> Edit
+            </button>
+            {% endif %}
+            
+            {% if user.is_official %}
+            <button type="button" onclick="confirmDeleteReport(this)" class="text-red-500 hover:text-red-700 hover:underline flex items-center gap-1" title="Delete report">
+              <i data-lucide="trash-2" class="h-3.5 w-3.5"></i> Delete
+            </button>
+            {% endif %}
+          </div>
+      </div>
+      {% endfor %}
     </div>
     {% else %}
     <div class="p-12 text-center">
@@ -317,6 +446,175 @@
     </div>
   </div>
 </div>
+
+<!-- VIEW CASE DETAILS MODAL -->
+<div id="viewCaseDetailsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4 animate-fade-in">
+  <div class="w-full max-w-lg rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150 relative">
+    <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
+      <h3 class="font-serif text-lg text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="info" class="h-5 w-5 text-navy"></i> Report Details
+      </h3>
+      <button type="button" onclick="closeViewDetailsModal()" class="text-ink-light hover:text-ink">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+
+    <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+      <div>
+        <span id="view-type-badge" class="inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider border"></span>
+        <h4 id="view-title" class="font-serif text-xl text-ink mt-2"></h4>
+      </div>
+
+      <div class="bg-sand/15 p-4 rounded-sm border border-border/60 text-xs space-y-2">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <span class="text-ink-muted block text-[9px] uppercase font-semibold">Category</span>
+            <span id="view-category" class="font-medium text-ink"></span>
+          </div>
+          <div id="view-location-container">
+            <span class="text-ink-muted block text-[9px] uppercase font-semibold">Incident Location</span>
+            <span id="view-location" class="font-medium text-ink"></span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 border-t border-sand/40 pt-2 mt-2">
+          <div>
+            <span class="text-ink-muted block text-[9px] uppercase font-semibold">Status</span>
+            <span id="view-status-badge" class="inline-flex items-center rounded-sm px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider border mt-0.5"></span>
+          </div>
+          <div>
+            <span class="text-ink-muted block text-[9px] uppercase font-semibold">Date Filed</span>
+            <span id="view-date" class="font-mono text-ink"></span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-[9px] uppercase font-semibold tracking-wider text-ink-muted">Description</label>
+        <p id="view-desc" class="text-xs text-ink leading-relaxed bg-[#fafaf8] p-3 border border-border rounded-sm whitespace-pre-wrap mt-1"></p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border pt-4">
+        <div>
+          <label class="text-[9px] uppercase font-semibold tracking-wider text-ink-muted">Submitted By</label>
+          <div class="mt-1 text-xs">
+            <p id="view-resident-name" class="font-semibold text-ink"></p>
+            <p id="view-resident-email" class="text-ink-muted font-mono mt-0.5"></p>
+            <p id="view-resident-phone" class="text-ink-muted font-mono mt-0.5"></p>
+          </div>
+        </div>
+        <div>
+          <label class="text-[9px] uppercase font-semibold tracking-wider text-ink-muted">Evidence & Attachment</label>
+          <div id="view-evidence-container" class="mt-1"></div>
+        </div>
+      </div>
+
+      <div class="border-t border-border pt-4">
+        <label class="text-[9px] uppercase font-semibold tracking-wider text-ink-muted">Case Remarks & Updates</label>
+        <p id="view-remarks" class="text-xs text-ink-muted leading-relaxed bg-sand/10 p-3 border border-border/80 rounded-sm whitespace-pre-wrap mt-1 italic"></p>
+      </div>
+    </div>
+
+    <div class="flex justify-end pt-4 mt-6 border-t border-border">
+      <button type="button" onclick="closeViewDetailsModal()" class="btn-primary py-1.5 px-4 text-xs font-semibold">Close Details</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT CASE MODAL -->
+<div id="editCaseModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4 animate-fade-in">
+  <div class="w-full max-w-lg rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150 relative">
+    <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
+      <h3 class="font-serif text-lg text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="pencil" class="h-5 w-5 text-navy"></i> Edit Case Report
+      </h3>
+      <button type="button" onclick="closeEditReportModal()" class="text-ink-light hover:text-ink">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+
+    <form id="edit-report-form" method="POST" action="" class="space-y-4">
+      {% csrf_token %}
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Title/Location -->
+        <div class="col-span-1 sm:col-span-2" id="edit-title-container">
+          <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Title</label>
+          <input type="text" id="edit-title" name="title" class="form-input w-full py-1.5 px-3 text-xs" required>
+        </div>
+        
+        <div class="col-span-1 sm:col-span-2" id="edit-location-container">
+          <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Incident Location</label>
+          <input type="text" id="edit-location" name="location" class="form-input w-full py-1.5 px-3 text-xs" required>
+        </div>
+
+        <!-- Category -->
+        <div>
+          <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Category</label>
+          <input type="text" id="edit-category" name="category" class="form-input w-full py-1.5 px-3 text-xs" required>
+        </div>
+
+        <!-- Status -->
+        <div>
+          <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Status</label>
+          <select id="edit-status" name="status" class="form-input w-full py-1.5 px-3 text-xs" required>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Description</label>
+        <textarea id="edit-desc" name="description" rows="3" class="form-input w-full p-2 text-xs focus:border-navy bg-white" required></textarea>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Coordinates -->
+        <div>
+          <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Latitude</label>
+          <input type="number" step="any" id="edit-lat" name="latitude" class="form-input w-full py-1.5 px-3 text-xs">
+        </div>
+        <div>
+          <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Longitude</label>
+          <input type="number" step="any" id="edit-lng" name="longitude" class="form-input w-full py-1.5 px-3 text-xs">
+        </div>
+      </div>
+
+      <!-- Assignee (Only for officials) -->
+      {% if user.is_official %}
+      <div>
+        <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Assign Investigation Staff</label>
+        <select id="edit-assigned" name="staff_id" class="form-input w-full py-1.5 px-3 text-xs">
+          <option value="">Unassigned</option>
+          {% for staff in staff_members %}
+            <option value="{{ staff.user_id }}">{{ staff.get_full_name|default:staff.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <!-- Remarks -->
+      <div>
+        <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Remarks / Investigation Updates</label>
+        <textarea id="edit-remarks" name="remarks" rows="2" placeholder="Add official investigation updates..." class="form-input w-full p-2 text-xs focus:border-navy bg-white"></textarea>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-6 border-t border-border pt-4">
+        <button type="button" onclick="closeEditReportModal()" class="btn-ghost py-1.5 px-4 text-xs font-semibold">Cancel</button>
+        <button type="submit" class="btn-primary py-1.5 px-4 text-xs flex items-center gap-1.5 font-semibold">
+          <i data-lucide="check" class="h-3.5 w-3.5"></i> Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DELETE REPORT FORM (hidden) -->
+<form id="delete-report-form" method="POST" action="" class="hidden">
+  {% csrf_token %}
+</form>
 {% endblock %}
 
 {% block extra_js %}
@@ -396,6 +694,154 @@
     }
   }
 
+  function openViewDetailsModal(button) {
+    const tr = button.closest('.report-row');
+    const id = tr.dataset.id;
+    const type = tr.dataset.type;
+    const title = tr.dataset.displayTitle;
+    const desc = tr.dataset.originalDesc;
+    const category = tr.dataset.category;
+    const location = tr.dataset.location;
+    const lat = tr.dataset.lat;
+    const lng = tr.dataset.lng;
+    const evidence = tr.dataset.evidence;
+    const remarks = tr.dataset.remarks;
+    const status = tr.dataset.status;
+    const date = tr.dataset.date;
+    const residentName = tr.dataset.residentName;
+    const residentEmail = tr.dataset.residentEmail;
+    const residentPhone = tr.dataset.residentPhone;
+
+    document.getElementById('view-title').innerText = title;
+    document.getElementById('view-desc').innerText = desc;
+    document.getElementById('view-category').innerText = category;
+    document.getElementById('view-date').innerText = date;
+    document.getElementById('view-resident-name').innerText = residentName;
+    document.getElementById('view-resident-email').innerText = residentEmail || 'No email';
+    document.getElementById('view-resident-phone').innerText = residentPhone || 'No contact number';
+    document.getElementById('view-remarks').innerText = remarks || 'No case remarks or investigation updates added yet.';
+
+    const typeBadge = document.getElementById('view-type-badge');
+    typeBadge.innerText = type;
+    if (type === 'complaint') {
+      typeBadge.className = 'inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider border bg-rose-50 text-rose-700 border-rose-200';
+    } else {
+      typeBadge.className = 'inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider border bg-amber-50 text-amber-700 border-amber-200';
+    }
+
+    const locationContainer = document.getElementById('view-location-container');
+    if (type === 'incident') {
+      document.getElementById('view-location').innerText = location;
+      locationContainer.classList.remove('hidden');
+    } else {
+      locationContainer.classList.add('hidden');
+    }
+
+    const statusBadge = document.getElementById('view-status-badge');
+    statusBadge.innerText = status;
+    const statusLower = status.toLowerCase();
+    if (statusLower === 'pending') {
+      statusBadge.className = 'inline-flex items-center rounded-sm px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider border mt-0.5 bg-amber-50 text-amber-700 border-amber-200';
+    } else if (statusLower === 'in progress') {
+      statusBadge.className = 'inline-flex items-center rounded-sm px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider border mt-0.5 bg-blue-50 text-blue-700 border-blue-200';
+    } else {
+      statusBadge.className = 'inline-flex items-center rounded-sm px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider border mt-0.5 bg-green-50 text-green-700 border-green-200';
+    }
+
+    const evidenceContainer = document.getElementById('view-evidence-container');
+    if (evidence) {
+      const fileExt = evidence.split('.').pop().toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)) {
+        evidenceContainer.innerHTML = `<a href="${evidence}" target="_blank" class="block border border-border rounded-sm overflow-hidden hover:opacity-95 max-w-[150px]"><img src="${evidence}" class="w-full h-auto object-cover max-h-[120px]" alt="Evidence photo"></a>`;
+      } else {
+        evidenceContainer.innerHTML = `<a href="${evidence}" target="_blank" class="inline-flex items-center gap-1.5 text-xs text-navy hover:underline bg-[#fafaf8] p-2 border border-border rounded-sm"><i data-lucide="file-text" class="h-4 w-4"></i> Download File Attachment</a>`;
+        lucide.createIcons();
+      }
+    } else {
+      evidenceContainer.innerHTML = '<span class="text-xs text-ink-light italic">No evidence attachment uploaded</span>';
+    }
+
+    const modal = document.getElementById('viewCaseDetailsModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeViewDetailsModal() {
+    const modal = document.getElementById('viewCaseDetailsModal');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+  }
+
+  function openEditReportModal(button) {
+    const tr = button.closest('.report-row');
+    const id = tr.dataset.id;
+    const type = tr.dataset.type;
+    const title = tr.dataset.displayTitle;
+    const desc = tr.dataset.originalDesc;
+    const category = tr.dataset.category;
+    const location = tr.dataset.location;
+    const lat = tr.dataset.lat;
+    const lng = tr.dataset.lng;
+    const remarks = tr.dataset.remarks;
+    const status = tr.dataset.status;
+
+    document.getElementById('edit-report-form').action = "/staff/edit-report/" + type + "/" + id + "/";
+    document.getElementById('edit-category').value = category;
+    document.getElementById('edit-status').value = status;
+    document.getElementById('edit-desc').value = desc;
+    document.getElementById('edit-lat').value = lat;
+    document.getElementById('edit-lng').value = lng;
+    document.getElementById('edit-remarks').value = remarks;
+
+    const selectAssigned = document.getElementById('edit-assigned');
+    if (selectAssigned) {
+      selectAssigned.value = tr.dataset.assignedId || '';
+    }
+
+    const titleContainer = document.getElementById('edit-title-container');
+    const locationContainer = document.getElementById('edit-location-container');
+    const titleInput = document.getElementById('edit-title');
+    const locationInput = document.getElementById('edit-location');
+    
+    if (type === 'complaint') {
+      titleInput.value = title;
+      titleContainer.classList.remove('hidden');
+      locationContainer.classList.add('hidden');
+      titleInput.required = true;
+      locationInput.required = false;
+    } else {
+      locationInput.value = location;
+      locationContainer.classList.remove('hidden');
+      titleContainer.classList.add('hidden');
+      locationInput.required = true;
+      titleInput.required = false;
+    }
+
+    const modal = document.getElementById('editCaseModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeEditReportModal() {
+    const modal = document.getElementById('editCaseModal');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+  }
+
+  function confirmDeleteReport(button) {
+    const tr = button.closest('.report-row');
+    const id = tr.dataset.id;
+    const type = tr.dataset.type;
+    const title = tr.dataset.displayTitle;
+    
+    if (confirm('Are you sure you want to permanently delete this ' + type + ' "' + title + '" (ID: #' + id + ')? This action cannot be undone.')) {
+      const form = document.getElementById('delete-report-form');
+      form.action = '/staff/delete-report/' + type + '/' + id + '/';
+      form.submit();
+    }
+  }
+
+
   function filterReports() {
     const query = document.getElementById('reportSearch').value.toLowerCase();
     const statusVal = document.getElementById('statusFilter').value.toLowerCase();
@@ -403,7 +849,6 @@
     const endDateVal = document.getElementById('endDate').value;
     
     const rows = document.querySelectorAll('.report-row');
-    let visibleCount = 0;
 
     rows.forEach(row => {
       const title = row.getAttribute('data-title') || '';
@@ -436,16 +881,16 @@
       }
       
       if (matchesSearch && matchesStatus && matchesDate) {
-        row.style.display = 'table-row';
-        visibleCount++;
+        row.style.display = (row.tagName === 'TR') ? 'table-row' : 'block';
       } else {
         row.style.display = 'none';
       }
     });
 
+    const visibleCountText = Array.from(document.querySelectorAll('tr.report-row')).filter(r => r.style.display !== 'none').length;
     const countElem = document.getElementById('report-count');
     if (countElem) {
-      countElem.innerText = visibleCount + ' visible / {{ total_reports }} total';
+      countElem.innerText = visibleCountText + ' visible / {{ total_reports }} total';
     }
   }
 

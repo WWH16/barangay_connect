@@ -855,3 +855,126 @@ def upload_backup_view(request):
             messages.error(request, f'Failed to upload backup file: {str(e)}')
             
     return redirect('backup_recovery')
+
+
+@login_required(login_url='login')
+def edit_report(request, report_type, report_id):
+    """Edit report details (complaint or incident). Available to officials or assigned staff."""
+    if not request.user.is_staff_or_official:
+        messages.error(request, 'Access denied.')
+        return redirect('resident_dashboard')
+
+    if report_type == 'complaint':
+        report = get_object_or_404(Complaint, complaint_id=report_id)
+        is_assigned = CaseAssignment.objects.filter(case_type='complaint', case_id=report_id, assigned_to=request.user).exists()
+    elif report_type == 'incident':
+        report = get_object_or_404(Incident, incident_id=report_id)
+        is_assigned = CaseAssignment.objects.filter(case_type='incident', case_id=report_id, assigned_to=request.user).exists()
+    else:
+        messages.error(request, 'Invalid report type.')
+        return redirect('staff_dashboard')
+
+    if request.user.role != 'official' and not is_assigned:
+        messages.error(request, 'You can only edit reports assigned to you.')
+        return redirect('staff_dashboard')
+
+    if request.method == 'POST':
+        category = request.POST.get('category', '').strip()
+        description = request.POST.get('description', '').strip()
+        status = request.POST.get('status')
+        remarks = request.POST.get('remarks', '').strip()
+        latitude = request.POST.get('latitude')
+        longitude = request.POST.get('longitude')
+
+        if report_type == 'complaint':
+            title = request.POST.get('title', '').strip()
+            if not title:
+                messages.error(request, 'Title is required.')
+                return redirect('staff_dashboard')
+            report.title = title
+        else:
+            location = request.POST.get('location', '').strip()
+            if not location:
+                messages.error(request, 'Location description is required.')
+                return redirect('staff_dashboard')
+            report.location = location
+
+        if not category or not description:
+            messages.error(request, 'Category and description are required.')
+            return redirect('staff_dashboard')
+
+        report.category = category
+        report.description = description
+        report.status = status
+        report.remarks = remarks
+        report.latitude = float(latitude) if latitude else None
+        report.longitude = float(longitude) if longitude else None
+        report.save()
+
+        # Update status of assignment if assignment exists
+        assignment = CaseAssignment.objects.filter(case_type=report_type, case_id=report_id).first()
+        if assignment:
+            assignment.status = status
+            assignment.save()
+
+        # If user is official, allow reassigning staff in the same form
+        if request.user.role == 'official':
+            staff_id = request.POST.get('staff_id')
+            if staff_id:
+                try:
+                    staff_user = User.objects.get(user_id=staff_id, role='staff')
+                    CaseAssignment.objects.update_or_create(
+                        case_type=report_type,
+                        case_id=report_id,
+                        defaults={
+                            'assigned_to': staff_user,
+                            'assigned_by': request.user,
+                            'status': status
+                        }
+                    )
+                except User.DoesNotExist:
+                    pass
+            else:
+                # Unassign
+                CaseAssignment.objects.filter(case_type=report_type, case_id=report_id).delete()
+
+        # Log action
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Edited {report_type} report details: ID #{report_id}"
+        )
+        messages.success(request, f"{report_type.capitalize()} report details updated successfully.")
+
+    return redirect('staff_dashboard')
+
+
+@login_required(login_url='login')
+def delete_report(request, report_type, report_id):
+    """Delete a report. Only officials are authorized."""
+    if request.user.role != 'official':
+        messages.error(request, 'Only Barangay Officials can delete reports.')
+        return redirect('staff_dashboard')
+
+    if request.method == 'POST':
+        if report_type == 'complaint':
+            report = get_object_or_404(Complaint, complaint_id=report_id)
+            title = report.title
+        elif report_type == 'incident':
+            report = get_object_or_404(Incident, incident_id=report_id)
+            title = f"Incident: {report.category}"
+        else:
+            messages.error(request, 'Invalid report type.')
+            return redirect('staff_dashboard')
+
+        # Clean assignments manually as generic case_id is not database cascading
+        CaseAssignment.objects.filter(case_type=report_type, case_id=report_id).delete()
+        report.delete()
+
+        # Log action
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f"Deleted {report_type} report: '{title}' (ID: #{report_id})"
+        )
+        messages.success(request, f"{report_type.capitalize()} report #{report_id} has been permanently deleted.")
+
+    return redirect('staff_dashboard')
