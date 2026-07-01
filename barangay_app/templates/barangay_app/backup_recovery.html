@@ -131,7 +131,7 @@
           </div>
           
           <div class="flex justify-end">
-            <button type="submit" class="w-full btn-primary py-2 px-4 text-xs flex items-center justify-center gap-1.5">
+            <button type="button" onclick="confirmUploadRestore()" class="w-full btn-primary py-2 px-4 text-xs flex items-center justify-center gap-1.5">
               <i data-lucide="upload" class="h-3.5 w-3.5"></i> Upload & Restore Directly
             </button>
           </div>
@@ -301,6 +301,45 @@
   </div>
 </div>
 
+<!-- UPLOAD CONFIRMATION MODAL -->
+<div id="upload-confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4 animate-fade-in">
+  <div class="w-full max-w-md rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150">
+    <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
+      <h3 class="font-serif text-base text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="alert-triangle" class="h-5 w-5 text-red-600 animate-pulse"></i> Confirm Database Restore
+      </h3>
+      <button type="button" onclick="closeUploadConfirmModal()" class="text-ink-light hover:text-ink">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+
+    <div class="space-y-4">
+      <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-sm text-xs flex gap-2">
+        <i data-lucide="alert-circle" class="h-5 w-5 shrink-0 mt-0.5 text-red-600"></i>
+        <div>
+          <p class="font-semibold mb-1 uppercase tracking-wide">CRITICAL WARNING:</p>
+          <p>You are about to overwrite the current database. All current information (reports, user registers, updates) will be permanently replaced by the contents of the uploaded file.</p>
+        </div>
+      </div>
+      
+      <p class="text-xs text-ink-muted">
+        Are you sure you want to restore the system state from the uploaded file:
+      </p>
+      
+      <p class="font-mono text-xs text-ink font-semibold p-2 bg-sand/30 rounded border border-border break-all" id="upload-filename-display">
+        file_name.sqlite3
+      </p>
+      
+      <div class="flex justify-end gap-2 mt-6 border-t border-border pt-4">
+        <button type="button" onclick="closeUploadConfirmModal()" class="btn-ghost py-1.5 px-4 text-xs font-semibold">Cancel</button>
+        <button type="button" onclick="submitUploadRestore(this)" class="btn-primary bg-red-600 border-red-600 hover:bg-red-700 text-white py-1.5 px-4 text-xs flex items-center gap-1.5 font-semibold">
+          <i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i> Yes, Restore Now
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- DELETE CONFIRMATION MODAL -->
 <div id="delete-confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4 animate-fade-in">
   <div class="w-full max-w-md rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150">
@@ -429,6 +468,47 @@
     const modal = document.getElementById('restore-confirm-modal');
     modal.classList.remove('flex');
     modal.classList.add('hidden');
+  }
+
+  // Intercept restore-form submit to add loader state
+  document.getElementById('restore-form').addEventListener('submit', function() {
+    const btn = this.querySelector('button[type="submit"]');
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = '0.75';
+      btn.style.cursor = 'not-allowed';
+      btn.innerHTML = `<svg style="display:inline-block;animation:spin 1s linear infinite;margin-right:8px;width:14px;height:14px;vertical-align:middle;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg> Restoring...`;
+    }
+  });
+
+  function confirmUploadRestore() {
+    const fileInput = document.getElementById('backup_file');
+    if (!fileInput.files || fileInput.files.length === 0) {
+      fileInput.reportValidity();
+      return;
+    }
+    const filename = fileInput.files[0].name;
+    document.getElementById('upload-filename-display').innerText = filename;
+    
+    const modal = document.getElementById('upload-confirm-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeUploadConfirmModal() {
+    const modal = document.getElementById('upload-confirm-modal');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+  }
+
+  function submitUploadRestore(btn) {
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = '0.75';
+      btn.style.cursor = 'not-allowed';
+      btn.innerHTML = `<svg style="display:inline-block;animation:spin 1s linear infinite;margin-right:8px;width:14px;height:14px;vertical-align:middle;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg> Restoring...`;
+    }
+    document.getElementById('uploadForm').submit();
   }
 
   function confirmDelete(backupId, filename) {
