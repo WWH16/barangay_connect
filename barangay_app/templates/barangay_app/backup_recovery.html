@@ -120,15 +120,13 @@
         
         <form id="uploadForm" method="POST" action="{% url 'upload_backup' %}" enctype="multipart/form-data" class="space-y-4">
           {% csrf_token %}
-          <div class="border-2 border-dashed border-border hover:border-navy/40 transition-colors p-4 rounded-sm bg-sand/10 flex flex-col items-center justify-center text-center">
+          <label for="backup_file" class="block border-2 border-dashed border-border hover:border-navy/40 transition-colors p-4 rounded-sm bg-sand/10 flex flex-col items-center justify-center text-center cursor-pointer">
             <i data-lucide="file-up" class="h-8 w-8 text-ink-light/50 mb-2"></i>
-            <label for="backup_file" class="cursor-pointer">
-              <span class="text-xs font-semibold text-navy hover:underline">Choose file</span>
-              <input type="file" id="backup_file" name="backup_file" accept=".sqlite3,.db,.sqlite" class="hidden" required onchange="displayFileName(this)">
-            </label>
+            <span class="text-xs font-semibold text-navy hover:underline">Choose file</span>
+            <input type="file" id="backup_file" name="backup_file" accept=".sqlite3,.db,.sqlite" class="hidden" required onchange="displayFileName(this)">
             <p id="file-name-display" class="text-xs text-ink-muted font-mono mt-2 hidden bg-white py-1 px-3 border border-border rounded-sm max-w-full truncate"></p>
             <p class="text-[9px] text-ink-light mt-1">Accepts .sqlite3, .db, .sqlite formats</p>
-          </div>
+          </label>
           
           <div class="flex justify-end">
             <button type="button" id="upload-restore-btn" onclick="confirmUploadRestore()" class="w-full btn-primary py-2 px-4 text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none" disabled>
