@@ -7,7 +7,7 @@ import os
 from django.utils import timezone
 from django.conf import settings
 from resident.models import User, Complaint, Incident, EvidenceFile, CaseAssignment, Notification, ActivityLog, DatabaseBackup, BackupSettings
-from barangay_app.email_utils import send_case_assigned_email, send_status_update_email, send_test_email, send_resident_notification
+from barangay_app.email_utils import send_case_assigned_email, send_status_update_email, send_test_email, send_resident_notification, send_report_updated_email
 
 User = get_user_model()
 
@@ -990,6 +990,19 @@ def edit_report(request, report_type, report_id):
             else:
                 # Unassign
                 CaseAssignment.objects.filter(case_type=report_type, case_id=report_id).delete()
+
+        # Fetch final assigned staff details for notification
+        assigned_staff_name = "Unassigned"
+        final_assignment = CaseAssignment.objects.filter(case_type=report_type, case_id=report_id).first()
+        if final_assignment and final_assignment.assigned_to:
+            assigned_staff_name = final_assignment.assigned_to.get_full_name() or final_assignment.assigned_to.username
+
+        # Notify resident
+        Notification.objects.create(
+            user=report.user,
+            message=f"The details of your {report_type} (ID: #{report_id}) have been updated by {request.user.get_full_name() or request.user.username} ({request.user.get_role_display()}). Assigned Staff: {assigned_staff_name}."
+        )
+        send_report_updated_email(report, report_type, request.user)
 
         # Log action
         ActivityLog.objects.create(

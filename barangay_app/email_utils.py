@@ -197,3 +197,44 @@ def send_test_email(recipient_email):
         recipient_name='Resident / Staff',
         message_body=message_body
     )
+
+
+def send_report_updated_email(case_obj, case_type, updater_user):
+    resident = case_obj.user
+    if not resident.email:
+        logger.warning(f'Resident {resident.username} has no email — skipping notification.')
+        return
+
+    if case_type == 'complaint':
+        case_label = f'Complaint #{case_obj.complaint_id}: {case_obj.title}'
+    else:
+        case_label = f'Incident #{case_obj.incident_id}: {case_obj.category} at {case_obj.location}'
+
+    subject = f'[Barangay Connect] Your {case_type.title()} Details Have Been Updated'
+    message_body = f'A staff member or official has updated the details of your {case_type}. Please see the current details below:'
+
+    from resident.models import CaseAssignment
+    assignment = CaseAssignment.objects.filter(case_type=case_type, case_id=case_obj.pk).first()
+    assigned_staff = f"{assignment.assigned_to.get_full_name() or assignment.assigned_to.username}" if assignment and assignment.assigned_to else "Unassigned"
+
+    details = [
+        ('Case', case_label),
+        ('Category', case_obj.category),
+        ('Description', case_obj.description),
+        ('Status', case_obj.status),
+        ('Assigned Staff', assigned_staff),
+    ]
+    if case_type == 'incident':
+        details.append(('Location', case_obj.location))
+    if case_obj.remarks:
+        details.append(('Remarks', case_obj.remarks))
+    if updater_user:
+        details.append(('Updated By', f'{updater_user.get_full_name() or updater_user.username} ({updater_user.get_role_display()})'))
+
+    send_themed_email(
+        to_emails=resident.email,
+        subject=subject,
+        recipient_name=resident.get_full_name() or resident.username,
+        message_body=message_body,
+        details=details
+    )
