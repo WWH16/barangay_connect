@@ -54,9 +54,14 @@ def login_view(request):
             password = request.POST.get('password', '')
 
             try:
-                user_obj = User.objects.get(email=email)
-                user = authenticate(request, username=user_obj.username, password=password)
-            except User.DoesNotExist:
+                # Use case-insensitive lookup and first() to prevent MultipleObjectsReturned errors
+                user_obj = User.objects.filter(email__iexact=email).first()
+                if user_obj:
+                    user = authenticate(request, username=user_obj.username, password=password)
+                else:
+                    user = None
+            except Exception as e:
+                print(f"Authentication error: {e}")
                 user = None
 
             if user is not None:
@@ -79,7 +84,7 @@ def login_view(request):
                 messages.error(request, 'All fields are required.')
             elif password != confirm_password:
                 messages.error(request, 'Passwords do not match.')
-            elif User.objects.filter(email=email).exists():
+            elif User.objects.filter(email__iexact=email).exists():
                 messages.error(request, 'An account with this email already exists.')
             elif len(password) < 6:
                 messages.error(request, 'Password must be at least 6 characters.')
