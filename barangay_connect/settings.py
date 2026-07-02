@@ -144,6 +144,9 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@barangayconnect.com')
 EMAIL_TIMEOUT = 10
 
+
+
+
 # ──────────────────────────────────────────────────
 # Google reCAPTCHA v3 Keys
 # ──────────────────────────────────────────────────

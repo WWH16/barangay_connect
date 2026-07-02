@@ -19,7 +19,7 @@ User = get_user_model()
 def _send_email_thread(email, to_emails):
     try:
         email.send(fail_silently=False)
-        logger.info(f'Themed HTML email sent to {to_emails}.')
+        logger.info(f'Themed HTML email sent via SMTP to {to_emails}.')
     except Exception as e:
         logger.error(f'Failed to send themed HTML email to {to_emails}: {e}')
 
@@ -59,6 +59,8 @@ def send_themed_email(to_emails, subject, recipient_name, message_body, details=
     except Exception as e:
         logger.error(f'Failed to initialize themed HTML email to {to_emails}: {e}')
         return False
+
+
 
 
 
