@@ -164,7 +164,7 @@
               data-desc="{{ report.description|lower }}" 
               data-resident="{{ report.resident.get_full_name|default:report.resident.username|lower }}"
               data-assigned="{% if report.assigned_to %}{{ report.assigned_to.get_full_name|default:report.assigned_to.username|lower }}{% else %}unassigned{% endif %}"
-              data-status="{{ report.status|lower }}"
+              data-status="{{ report.status }}"
               data-date="{{ report.created_at|date:'Y-m-d' }}"
               data-display-title="{{ report.title }}"
               data-original-desc="{{ report.description }}"
@@ -329,7 +329,7 @@
           data-desc="{{ report.description|lower }}" 
           data-resident="{{ report.resident.get_full_name|default:report.resident.username|lower }}"
           data-assigned="{% if report.assigned_to %}{{ report.assigned_to.get_full_name|default:report.assigned_to.username|lower }}{% else %}unassigned{% endif %}"
-          data-status="{{ report.status|lower }}"
+          data-status="{{ report.status }}"
           data-date="{{ report.created_at|date:'Y-m-d' }}"
           data-display-title="{{ report.title }}"
           data-original-desc="{{ report.description }}"
@@ -568,7 +568,7 @@
         <!-- Category -->
         <div>
           <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Category</label>
-          <input type="text" id="edit-category" name="category" class="form-input w-full py-1.5 px-3 text-xs" required>
+          <select id="edit-category" name="category" class="form-input w-full py-1.5 px-3 text-xs" required></select>
         </div>
 
         <!-- Status -->
@@ -847,7 +847,40 @@
     const status = tr.dataset.status;
 
     document.getElementById('edit-report-form').action = "/staff/edit-report/" + type + "/" + id + "/";
-    document.getElementById('edit-category').value = category;
+    const selectCategory = document.getElementById('edit-category');
+    selectCategory.innerHTML = '';
+    
+    if (type === 'complaint') {
+      const options = [
+        { value: 'Infrastructure', text: 'Infrastructure (Roads, Lights)' },
+        { value: 'Waste Management', text: 'Waste Management / Garbage' },
+        { value: 'Noise Disturbance', text: 'Noise Disturbance' },
+        { value: 'Public Safety', text: 'Public Safety' },
+        { value: 'Others', text: 'Others' }
+      ];
+      options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.text;
+        selectCategory.appendChild(option);
+      });
+    } else {
+      const options = [
+        { value: 'Fire Outbreak', text: 'Fire Outbreak' },
+        { value: 'Flooding / Calamity', text: 'Flooding / Calamity' },
+        { value: 'Road Accident', text: 'Road Accident' },
+        { value: 'Theft / Crime', text: 'Theft / Crime' },
+        { value: 'Public Hazard', text: 'Public Hazard (Fallen tree, wire)' },
+        { value: 'Others', text: 'Others' }
+      ];
+      options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.text;
+        selectCategory.appendChild(option);
+      });
+    }
+    selectCategory.value = category;
     document.getElementById('edit-status').value = status;
     document.getElementById('edit-desc').value = desc;
     document.getElementById('edit-lat').value = lat;
@@ -964,7 +997,7 @@
       const desc = row.getAttribute('data-desc') || '';
       const resident = row.getAttribute('data-resident') || '';
       const assigned = row.getAttribute('data-assigned') || '';
-      const status = row.getAttribute('data-status') || '';
+      const status = (row.getAttribute('data-status') || '').toLowerCase();
       const dateStr = row.getAttribute('data-date') || ''; // 'YYYY-MM-DD'
       
       // Search query match (title, description, submitter/resident, assignee)
