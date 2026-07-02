@@ -465,6 +465,34 @@
   </div>
 </div>
 
+<!-- Edit Map Picker Modal -->
+<div id="editMapPickerModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4 animate-fade-in" style="z-index: 100;">
+  <div class="w-full max-w-lg rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal relative">
+    <div class="mb-4 flex items-center justify-between border-b border-border pb-3">
+      <h3 class="font-serif text-lg text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="map-pin" class="h-5 w-5 text-navy"></i> Pinpoint Location
+      </h3>
+      <button type="button" onclick="closeEditMapPickerModal()" class="text-ink-light hover:text-ink">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+    
+    <p class="text-xs text-ink-muted mb-4">Drag the marker or click on the map to pinpoint the report location.</p>
+    
+    <div id="edit-picker-map" class="h-[300px] w-full rounded-sm border border-border"></div>
+    
+    <div class="mt-4 flex items-center justify-between gap-3 bg-sand/30 p-3 rounded-sm border border-border">
+      <div class="text-xs text-ink-muted">
+        Selected: <span id="edit-modal-latlng-display" class="font-mono font-medium text-navy">None</span>
+      </div>
+      <div class="flex gap-2">
+        <button type="button" onclick="closeEditMapPickerModal()" class="btn-ghost py-1.5 px-4 text-xs font-semibold">Cancel</button>
+        <button type="button" onclick="saveEditLocation()" class="btn-primary py-1.5 px-4 text-xs font-semibold">Confirm Location</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- VIEW CASE DETAILS MODAL -->
 <div id="viewCaseDetailsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4 animate-fade-in">
   <div class="w-full max-w-lg rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150 relative">
@@ -588,15 +616,21 @@
         <textarea id="edit-desc" name="description" rows="3" class="form-input w-full p-2 text-xs focus:border-navy bg-white" required></textarea>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <!-- Coordinates -->
-        <div>
-          <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Latitude</label>
-          <input type="number" step="any" id="edit-lat" name="latitude" class="form-input w-full py-1.5 px-3 text-xs">
+      <!-- Coordinates (Hidden but populated by map picker) -->
+      <input type="hidden" id="edit-lat" name="latitude">
+      <input type="hidden" id="edit-lng" name="longitude">
+
+      <!-- Location Pinpoint Picker -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="form-label mb-0 text-[10px] uppercase font-semibold text-ink-muted">Location Pinpoint</label>
+          <button type="button" onclick="openEditMapPickerModal()" class="text-xs text-navy hover:underline flex items-center gap-1 font-semibold">
+            <i data-lucide="map" class="h-3.5 w-3.5"></i> Pin on Map
+          </button>
         </div>
-        <div>
-          <label class="form-label mb-1.5 text-[10px] uppercase font-semibold text-ink-muted">Longitude</label>
-          <input type="number" step="any" id="edit-lng" name="longitude" class="form-input w-full py-1.5 px-3 text-xs">
+        <div id="edit-coords-display" class="text-xs text-ink bg-sand/30 p-2 rounded-sm border border-border flex items-center justify-between">
+          <span>Coordinates: <span id="edit-coords-text" class="font-mono text-navy font-semibold">Not set</span></span>
+          <button type="button" id="btn-clear-edit-coords" onclick="clearEditCoords()" class="text-[10px] text-red-500 hover:underline font-semibold hidden">Clear Pin</button>
         </div>
       </div>
 
@@ -885,6 +919,13 @@
     document.getElementById('edit-desc').value = desc;
     document.getElementById('edit-lat').value = lat;
     document.getElementById('edit-lng').value = lng;
+    if (lat && lng) {
+      document.getElementById('edit-coords-text').innerText = `${parseFloat(lat).toFixed(5)}, ${parseFloat(lng).toFixed(5)}`;
+      document.getElementById('btn-clear-edit-coords').classList.remove('hidden');
+    } else {
+      document.getElementById('edit-coords-text').innerText = 'Not set';
+      document.getElementById('btn-clear-edit-coords').classList.add('hidden');
+    }
     document.getElementById('edit-remarks').value = remarks;
 
     const selectAssigned = document.getElementById('edit-assigned');
@@ -920,6 +961,105 @@
     const modal = document.getElementById('editCaseModal');
     modal.classList.remove('flex');
     modal.classList.add('hidden');
+  }
+
+  let editMap;
+  let editMarker;
+  let editSelectedLatLng = null;
+
+  function initEditMap(initialLat, initialLng) {
+    const defaultLat = 16.9363;
+    const defaultLng = 121.7739;
+    
+    const startLat = initialLat ? parseFloat(initialLat) : defaultLat;
+    const startLng = initialLng ? parseFloat(initialLng) : defaultLng;
+    const startLoc = [startLat, startLng];
+
+    if (!editMap) {
+      editMap = L.map('edit-picker-map').setView(startLoc, 13);
+      
+      const positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+      });
+
+      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      });
+
+      positron.addTo(editMap);
+
+      const baseMaps = {
+        "Clean Style (Default)": positron,
+        "Detailed Map (OSM)": osm
+      };
+
+      L.control.layers(baseMaps).addTo(editMap);
+
+      editMarker = L.marker(startLoc, {draggable: true}).addTo(editMap);
+
+      editMap.on('click', function(e) {
+        editMarker.setLatLng(e.latlng);
+        updateEditLatLngDisplay(e.latlng);
+      });
+
+      editMarker.on('dragend', function(e) {
+        updateEditLatLngDisplay(editMarker.getLatLng());
+      });
+    } else {
+      editMap.setView(startLoc, 13);
+      editMarker.setLatLng(startLoc);
+    }
+    
+    updateEditLatLngDisplay(L.latLng(startLat, startLng));
+  }
+
+  function updateEditLatLngDisplay(latlng) {
+    editSelectedLatLng = latlng;
+    document.getElementById('edit-modal-latlng-display').innerText = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
+  }
+
+  function openEditMapPickerModal() {
+    const modal = document.getElementById('editMapPickerModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    const lat = document.getElementById('edit-lat').value;
+    const lng = document.getElementById('edit-lng').value;
+    
+    setTimeout(() => {
+      initEditMap(lat, lng);
+      editMap.invalidateSize();
+    }, 100);
+  }
+
+  function closeEditMapPickerModal() {
+    const modal = document.getElementById('editMapPickerModal');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+  }
+
+  function saveEditLocation() {
+    if (editSelectedLatLng) {
+      const lat = editSelectedLatLng.lat.toFixed(6);
+      const lng = editSelectedLatLng.lng.toFixed(6);
+      
+      document.getElementById('edit-lat').value = lat;
+      document.getElementById('edit-lng').value = lng;
+      
+      document.getElementById('edit-coords-text').innerText = `${lat}, ${lng}`;
+      document.getElementById('btn-clear-edit-coords').classList.remove('hidden');
+      
+      closeEditMapPickerModal();
+    }
+  }
+
+  function clearEditCoords() {
+    document.getElementById('edit-lat').value = '';
+    document.getElementById('edit-lng').value = '';
+    document.getElementById('edit-coords-text').innerText = 'Not set';
+    document.getElementById('btn-clear-edit-coords').classList.add('hidden');
   }
 
   function confirmDeleteReport(button) {
