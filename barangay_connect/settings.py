@@ -148,3 +148,6 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@barangayconne
 # ──────────────────────────────────────────────────
 RECAPTCHA_SITE_KEY = config('RECAPTCHA_SITE_KEY', default='')
 RECAPTCHA_SECRET_KEY = config('RECAPTCHA_SECRET_KEY', default='')
+
+# Temporarily disable COOP header because bare IP deployments over HTTP are not trusted secure contexts
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
