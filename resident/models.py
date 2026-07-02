@@ -1,5 +1,10 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
+
+class CustomUserManager(UserManager):
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault('role', 'official')
+        return super().create_superuser(username, email, password, **extra_fields)
 
 class User(AbstractUser):
     """Custom user model mapping to table 'User'."""
@@ -18,6 +23,8 @@ class User(AbstractUser):
     contact_number = models.CharField(max_length=20, blank=True, default='')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = CustomUserManager()
 
     class Meta:
         db_table = 'User'
