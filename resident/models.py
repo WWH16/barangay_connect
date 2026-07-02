@@ -27,15 +27,19 @@ class User(AbstractUser):
 
     @property
     def is_resident(self):
+        if self.is_superuser or self.is_staff:
+            return False
         return self.role == 'resident'
 
     @property
     def is_official(self):
+        if self.is_superuser:
+            return True
         return self.role == 'official'
 
     @property
     def is_staff_or_official(self):
-        return self.role in ('staff', 'official')
+        return self.role in ('staff', 'official') or self.is_staff or self.is_superuser
 
 
 class Complaint(models.Model):
