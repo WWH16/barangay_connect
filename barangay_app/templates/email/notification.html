@@ -125,7 +125,7 @@
                     {% for key, val in details %}
                     <tr>
                         <td class="details-label">{{ key }}</td>
-                        <td class="details-value">{{ val }}</td>
+                        <td class="details-value">{{ val|linebreaksbr }}</td>
                     </tr>
                     {% endfor %}
                 </table>

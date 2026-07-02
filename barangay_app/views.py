@@ -932,6 +932,21 @@ def edit_report(request, report_type, report_id):
         return redirect('staff_dashboard')
 
     if request.method == 'POST':
+        # Get old values to compare
+        old_category = report.category
+        old_description = report.description
+        old_status = report.status
+        old_remarks = report.remarks
+        old_lat = report.latitude
+        old_lng = report.longitude
+        
+        old_title = report.title if report_type == 'complaint' else None
+        old_location = report.location if report_type == 'incident' else None
+        
+        old_assignment = CaseAssignment.objects.filter(case_type=report_type, case_id=report_id).first()
+        old_staff_user = old_assignment.assigned_to if old_assignment else None
+        old_staff_name = old_staff_user.get_full_name() or old_staff_user.username if old_staff_user else "Unassigned"
+
         category = request.POST.get('category', '').strip()
         description = request.POST.get('description', '').strip()
         status = request.POST.get('status')
@@ -991,18 +1006,44 @@ def edit_report(request, report_type, report_id):
                 # Unassign
                 CaseAssignment.objects.filter(case_type=report_type, case_id=report_id).delete()
 
+        # Construct list of changed fields
+        changes = []
+        if report_type == 'complaint' and old_title != report.title:
+            changes.append(f"Title: '{old_title}' → '{report.title}'")
+        if report_type == 'incident' and old_location != report.location:
+            changes.append(f"Location: '{old_location}' → '{report.location}'")
+        if old_category != report.category:
+            changes.append(f"Category: '{old_category}' → '{report.category}'")
+        if old_description != report.description:
+            old_desc_trunc = (old_description[:30] + '...') if len(old_description) > 30 else old_description
+            new_desc_trunc = (report.description[:30] + '...') if len(report.description) > 30 else report.description
+            changes.append(f"Description: '{old_desc_trunc}' → '{new_desc_trunc}'")
+        if old_status != report.status:
+            changes.append(f"Status: '{old_status}' → '{report.status}'")
+        if old_remarks != report.remarks:
+            changes.append(f"Remarks: '{old_remarks}' → '{report.remarks}'" if old_remarks else f"Remarks added: '{report.remarks}'")
+        if old_lat != report.latitude or old_lng != report.longitude:
+            old_coords = f"({old_lat}, {old_lng})" if old_lat and old_lng else "None"
+            new_coords = f"({report.latitude}, {report.longitude})" if report.latitude and report.longitude else "None"
+            changes.append(f"Location Pin: {old_coords} → {new_coords}")
+
         # Fetch final assigned staff details for notification
         assigned_staff_name = "Unassigned"
         final_assignment = CaseAssignment.objects.filter(case_type=report_type, case_id=report_id).first()
         if final_assignment and final_assignment.assigned_to:
             assigned_staff_name = final_assignment.assigned_to.get_full_name() or final_assignment.assigned_to.username
+        
+        if old_staff_name != assigned_staff_name:
+            changes.append(f"Assigned Staff: '{old_staff_name}' → '{assigned_staff_name}'")
+
+        changes_summary = ", ".join(changes) if changes else "No details changed"
 
         # Notify resident
         Notification.objects.create(
             user=report.user,
-            message=f"The details of your {report_type} (ID: #{report_id}) have been updated by {request.user.get_full_name() or request.user.username} ({request.user.get_role_display()}). Assigned Staff: {assigned_staff_name}."
+            message=f"The details of your {report_type} (ID: #{report_id}) have been updated by {request.user.get_full_name() or request.user.username} ({request.user.get_role_display()}). Changes: {changes_summary}."
         )
-        send_report_updated_email(report, report_type, request.user)
+        send_report_updated_email(report, report_type, request.user, changes)
 
         # Log action
         ActivityLog.objects.create(
