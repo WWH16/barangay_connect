@@ -6,6 +6,7 @@ and are wrapped in try/except so that a failed email NEVER crashes the applicati
 """
 
 import logging
+import threading
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.core.mail import EmailMessage
@@ -13,6 +14,14 @@ from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
+
+def _send_email_thread(email, to_emails):
+    try:
+        email.send(fail_silently=False)
+        logger.info(f'Themed HTML email sent to {to_emails}.')
+    except Exception as e:
+        logger.error(f'Failed to send themed HTML email to {to_emails}: {e}')
 
 
 def send_themed_email(to_emails, subject, recipient_name, message_body, details=None):
@@ -43,12 +52,14 @@ def send_themed_email(to_emails, subject, recipient_name, message_body, details=
             to=to_emails,
         )
         email.content_subtype = 'html'
-        email.send(fail_silently=False)
-        logger.info(f'Themed HTML email sent to {to_emails}.')
+        
+        # Send asynchronously to prevent blocking Gunicorn workers
+        threading.Thread(target=_send_email_thread, args=(email, to_emails), daemon=True).start()
         return True
     except Exception as e:
-        logger.error(f'Failed to send themed HTML email to {to_emails}: {e}')
+        logger.error(f'Failed to initialize themed HTML email to {to_emails}: {e}')
         return False
+
 
 
 def send_resident_notification(to_email, subject, template_name, context):
