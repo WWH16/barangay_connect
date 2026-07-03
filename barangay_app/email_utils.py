@@ -7,10 +7,12 @@ and are wrapped in try/except so that a failed email NEVER crashes the applicati
 
 import logging
 import threading
+import requests
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.contrib.auth import get_user_model
+from decouple import config
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -22,6 +24,27 @@ def _send_email_thread(email, to_emails):
         logger.info(f'Themed HTML email sent via SMTP to {to_emails}.')
     except Exception as e:
         logger.error(f'Failed to send themed HTML email to {to_emails}: {e}')
+
+
+def _send_email_thread_http(to_emails, subject, html_content, api_key, from_email):
+    try:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        data = {
+            "from": from_email,
+            "to": to_emails,
+            "subject": subject,
+            "html": html_content,
+        }
+        response = requests.post("https://api.resend.com/emails", json=data, headers=headers, timeout=15)
+        if response.status_code in [200, 201]:
+            logger.info(f'Themed HTML email sent via Resend HTTPS API to {to_emails}.')
+        else:
+            logger.error(f'Failed to send themed HTML email via Resend API to {to_emails}: Status {response.status_code}, {response.text}')
+    except Exception as e:
+        logger.error(f'Resend HTTPS API Exception for {to_emails}: {e}')
 
 
 def send_themed_email(to_emails, subject, recipient_name, message_body, details=None):
@@ -45,6 +68,18 @@ def send_themed_email(to_emails, subject, recipient_name, message_body, details=
             'details': details,
         }
         html_content = render_to_string('email/notification.html', context)
+        
+        # Check if Resend API Key is set to bypass blocked SMTP ports on Render/DigitalOcean
+        resend_api_key = config('RESEND_API_KEY', default='')
+        if resend_api_key:
+            threading.Thread(
+                target=_send_email_thread_http,
+                args=(to_emails, subject, html_content, resend_api_key, settings.DEFAULT_FROM_EMAIL),
+                daemon=True
+            ).start()
+            return True
+
+        # Fallback to standard Django SMTP
         email = EmailMessage(
             subject=subject,
             body=html_content,
@@ -59,6 +94,7 @@ def send_themed_email(to_emails, subject, recipient_name, message_body, details=
     except Exception as e:
         logger.error(f'Failed to initialize themed HTML email to {to_emails}: {e}')
         return False
+
 
 
 
