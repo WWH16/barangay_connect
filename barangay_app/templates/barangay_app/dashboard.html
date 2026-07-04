@@ -222,12 +222,12 @@
             </td>
             <td class="px-5 py-3 whitespace-nowrap">
               {% if report.remarks %}
-                <button type="button" onclick="openRemarksModal({{ report.id }})" class="inline-flex items-center gap-1.5 text-xs text-navy font-semibold hover:underline">
+                <button type="button" onclick="openRemarksModal('{{ report.report_type }}', {{ report.id }})" class="inline-flex items-center gap-1.5 text-xs text-navy font-semibold hover:underline">
                   <i data-lucide="message-square-text" class="h-4 w-4"></i> View Remarks
                 </button>
               {% else %}
                 {% if user.is_official or report.assigned_to == user %}
-                  <button type="button" onclick="openRemarksModal({{ report.id }})" class="inline-flex items-center gap-1.5 text-xs text-ink-light hover:text-navy font-medium">
+                  <button type="button" onclick="openRemarksModal('{{ report.report_type }}', {{ report.id }})" class="inline-flex items-center gap-1.5 text-xs text-ink-light hover:text-navy font-medium">
                     <i data-lucide="message-square-plus" class="h-4 w-4"></i> Add Remarks
                   </button>
                 {% else %}
@@ -236,11 +236,11 @@
               {% endif %}
 
               <!-- Remarks Modal Container -->
-              <div id="remarks-modal-{{ report.id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4">
+              <div id="remarks-modal-{{ report.report_type }}-{{ report.id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4">
                 <div class="w-full max-w-md rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150">
                   <div class="flex items-center justify-between border-b border-border pb-3 mb-4">
                     <h3 class="font-serif text-base text-ink font-semibold">Case Remarks & Updates</h3>
-                    <button type="button" onclick="closeRemarksModal({{ report.id }})" class="text-ink-light hover:text-ink">
+                    <button type="button" onclick="closeRemarksModal('{{ report.report_type }}', {{ report.id }})" class="text-ink-light hover:text-ink">
                       <i data-lucide="x" class="h-4 w-4"></i>
                     </button>
                   </div>
@@ -258,7 +258,7 @@
                     {% if user.is_official or report.assigned_to == user %}
                       <textarea name="remarks" rows="4" placeholder="Add detailed investigation updates, case remarks, or official decisions here..." class="form-input w-full p-2 text-xs focus:border-navy mb-4 bg-white">{{ report.remarks }}</textarea>
                       <div class="flex justify-end gap-2 pt-2 border-t border-border">
-                        <button type="button" onclick="closeRemarksModal({{ report.id }})" class="btn-ghost py-1.5 px-4 text-xs">Cancel</button>
+                        <button type="button" onclick="closeRemarksModal('{{ report.report_type }}', {{ report.id }})" class="btn-ghost py-1.5 px-4 text-xs">Cancel</button>
                         <button type="submit" class="btn-primary py-1.5 px-4 text-xs">Save Remarks</button>
                       </div>
                     {% else %}
@@ -266,7 +266,7 @@
                         <p class="text-ink-muted leading-relaxed whitespace-pre-wrap">{{ report.remarks|default:"No updates or case remarks added yet." }}</p>
                       </div>
                       <div class="flex justify-end pt-2 border-t border-border">
-                        <button type="button" onclick="closeRemarksModal({{ report.id }})" class="btn-ghost py-1 px-3 text-xs">Close</button>
+                        <button type="button" onclick="closeRemarksModal('{{ report.report_type }}', {{ report.id }})" class="btn-ghost py-1 px-3 text-xs">Close</button>
                       </div>
                     {% endif %}
                   </form>
@@ -773,16 +773,16 @@
     modal.classList.remove('flex');
   }
 
-  function openRemarksModal(id) {
-    const modal = document.getElementById('remarks-modal-' + id);
+  function openRemarksModal(type, id) {
+    const modal = document.getElementById('remarks-modal-' + type + '-' + id);
     if (modal) {
       modal.classList.remove('hidden');
       modal.classList.add('flex');
     }
   }
 
-  function closeRemarksModal(id) {
-    const modal = document.getElementById('remarks-modal-' + id);
+  function closeRemarksModal(type, id) {
+    const modal = document.getElementById('remarks-modal-' + type + '-' + id);
     if (modal) {
       modal.classList.add('hidden');
       modal.classList.remove('flex');
@@ -1388,11 +1388,12 @@
         let remarks = '';
         if (remarksBtn) {
           const reportId = row.getAttribute('data-id');
-          const modalTextarea = document.querySelector(`#remarks-modal-${reportId} textarea[name="remarks"]`);
+          const reportType = row.getAttribute('data-type');
+          const modalTextarea = document.querySelector(`#remarks-modal-${reportType}-${reportId} textarea[name="remarks"]`);
           if (modalTextarea) {
             remarks = modalTextarea.value.trim();
           } else {
-            const remarksViewOnly = document.querySelector(`#remarks-modal-${reportId} div.bg-\\[\\#fafaf8\\] p`);
+            const remarksViewOnly = document.querySelector(`#remarks-modal-${reportType}-${reportId} div.bg-\\[\\#fafaf8\\] p`);
             if (remarksViewOnly) {
               remarks = remarksViewOnly.textContent.trim();
             }
