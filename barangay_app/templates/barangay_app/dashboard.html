@@ -976,11 +976,18 @@
     const startLoc = [startLat, startLng];
 
     if (!editMap) {
-      editMap = L.map('edit-picker-map').setView(startLoc, 13);
+      editMap = L.map('edit-picker-map').setView(startLoc, 16);
       
-      const positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+      const googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0','mt1','mt2','mt3'],
+        attribution: '&copy; Google Maps'
+      });
+
+      const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0','mt1','mt2','mt3'],
+        attribution: '&copy; Google Maps'
       });
 
       const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -988,11 +995,18 @@
         attribution: '&copy; OpenStreetMap contributors'
       });
 
-      positron.addTo(editMap);
+      const positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+      });
+
+      googleStreets.addTo(editMap);
 
       const baseMaps = {
-        "Clean Style (Default)": positron,
-        "Detailed Map (OSM)": osm
+        "Detailed Streets (Google)": googleStreets,
+        "Satellite Imagery (Google)": googleHybrid,
+        "OpenStreetMap (Standard)": osm,
+        "Clean Light Style": positron
       };
 
       L.control.layers(baseMaps).addTo(editMap);
@@ -1008,7 +1022,7 @@
         updateEditLatLngDisplay(editMarker.getLatLng());
       });
     } else {
-      editMap.setView(startLoc, 13);
+      editMap.setView(startLoc, 16);
       editMarker.setLatLng(startLoc);
     }
     

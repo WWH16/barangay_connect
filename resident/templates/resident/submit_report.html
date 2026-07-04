@@ -283,11 +283,18 @@
     // Default to Naguilian Norte, Ilagan City, Isabela
     const defaultLoc = [17.1680, 121.8666]; // Naguilian Norte, Ilagan City, Isabela
     
-    map = L.map('picker-map').setView(defaultLoc, 13);
+    map = L.map('picker-map').setView(defaultLoc, 16);
     
-    const positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+    const googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0','mt1','mt2','mt3'],
+      attribution: '&copy; Google Maps'
+    });
+
+    const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0','mt1','mt2','mt3'],
+      attribution: '&copy; Google Maps'
     });
 
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -295,11 +302,19 @@
       attribution: '&copy; OpenStreetMap contributors'
     });
 
-    positron.addTo(map);
+    const positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+    });
+
+    // Default to Google Streets for high detail
+    googleStreets.addTo(map);
 
     const baseMaps = {
-      "Clean Style (Default)": positron,
-      "Detailed Map (OSM)": osm
+      "Detailed Streets (Google)": googleStreets,
+      "Satellite Imagery (Google)": googleHybrid,
+      "OpenStreetMap (Standard)": osm,
+      "Clean Light Style": positron
     };
 
     L.control.layers(baseMaps).addTo(map);

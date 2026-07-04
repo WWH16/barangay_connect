@@ -312,10 +312,18 @@
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script>
   // -- Community Map Initialization --
-  const communityMap = L.map('community-map').setView([17.1680, 121.8666], 13);
-  const positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+  const communityMap = L.map('community-map').setView([17.1680, 121.8666], 15);
+  
+  const googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0','mt1','mt2','mt3'],
+    attribution: '&copy; Google Maps'
+  });
+
+  const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0','mt1','mt2','mt3'],
+    attribution: '&copy; Google Maps'
   });
 
   const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -323,11 +331,18 @@
     attribution: '&copy; OpenStreetMap contributors'
   });
 
-  positron.addTo(communityMap);
+  const positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+  });
+
+  googleStreets.addTo(communityMap);
 
   const baseMaps = {
-    "Clean Style (Default)": positron,
-    "Detailed Map (OSM)": osm
+    "Detailed Streets (Google)": googleStreets,
+    "Satellite Imagery (Google)": googleHybrid,
+    "OpenStreetMap (Standard)": osm,
+    "Clean Light Style": positron
   };
 
   L.control.layers(baseMaps).addTo(communityMap);
