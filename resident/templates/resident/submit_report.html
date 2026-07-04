@@ -280,8 +280,8 @@
   function initMap() {
     if (map) return; // already initialized
     
-    // Default to Cauayan City, Isabela
-    const defaultLoc = [16.9363, 121.7739]; // Cauayan City, Isabela
+    // Default to Naguilian Norte, Ilagan City, Isabela
+    const defaultLoc = [17.1680, 121.8666]; // Naguilian Norte, Ilagan City, Isabela
     
     map = L.map('picker-map').setView(defaultLoc, 13);
     
@@ -318,22 +318,8 @@
       updateLatLngDisplay(marker.getLatLng());
     });
 
-    // Attempt to get user's actual location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const userLoc = [position.coords.latitude, position.coords.longitude];
-          map.setView(userLoc, 16);
-          marker.setLatLng(userLoc);
-          updateLatLngDisplay(L.latLng(userLoc[0], userLoc[1]));
-        },
-        () => {
-          updateLatLngDisplay(L.latLng(defaultLoc[0], defaultLoc[1]));
-        }
-      );
-    } else {
-      updateLatLngDisplay(L.latLng(defaultLoc[0], defaultLoc[1]));
-    }
+    // Set default coordinates display
+    updateLatLngDisplay(L.latLng(defaultLoc[0], defaultLoc[1]));
   }
 
   function updateLatLngDisplay(latlng) {
