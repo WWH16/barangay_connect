@@ -174,15 +174,22 @@
 
             <!-- Actions -->
             <td class="px-6 py-4 whitespace-nowrap text-right text-navy font-medium">
-              {% if u.user_id == user.user_id %}
-              <span class="text-ink-light text-[10px] italic">Current Account</span>
-              {% else %}
-              <button type="button" 
-                onclick="openEditModal('{{ u.user_id }}', '{{ u.username|escapejs }}', '{{ u.first_name|escapejs }}', '{{ u.last_name|escapejs }}', '{{ u.email|escapejs }}', '{{ u.contact_number|escapejs }}', '{{ u.role|escapejs }}', '{{ u.status|escapejs }}')" 
-                class="inline-flex items-center gap-1 text-xs text-navy font-semibold hover:underline">
-                <i data-lucide="pencil" class="h-3.5 w-3.5"></i> Edit Profile
-              </button>
-              {% endif %}
+              <div class="flex items-center justify-end gap-2.5">
+                <button type="button" 
+                  onclick="openViewModal('{{ u.username|escapejs }}', '{{ u.first_name|escapejs }}', '{{ u.last_name|escapejs }}', '{{ u.email|escapejs }}', '{{ u.contact_number|escapejs }}', '{{ u.get_role_display|escapejs }}', '{{ u.status|escapejs }}', '{{ u.is_active|yesno:"True,False" }}', '{{ u.is_staff|yesno:"True,False" }}', '{{ u.is_superuser|yesno:"True,False" }}', '{{ u.created_at|date:"Y-m-d H:i" }}', '{{ u.last_login|date:"Y-m-d H:i"|default:"Never" }}', '{{ u.password|escapejs }}')"
+                  class="inline-flex items-center gap-1 text-xs text-navy font-semibold hover:underline">
+                  <i data-lucide="eye" class="h-3.5 w-3.5"></i> View Details
+                </button>
+                {% if u.user_id == user.user_id %}
+                <span class="text-ink-light text-[10px] italic border-l border-border pl-2.5">(You)</span>
+                {% else %}
+                <button type="button" 
+                  onclick="openEditModal('{{ u.user_id }}', '{{ u.username|escapejs }}', '{{ u.first_name|escapejs }}', '{{ u.last_name|escapejs }}', '{{ u.email|escapejs }}', '{{ u.contact_number|escapejs }}', '{{ u.role|escapejs }}', '{{ u.status|escapejs }}')" 
+                  class="inline-flex items-center gap-1 text-xs text-navy font-semibold hover:underline border-l border-border pl-2.5">
+                  <i data-lucide="pencil" class="h-3.5 w-3.5"></i> Edit
+                </button>
+                {% endif %}
+              </div>
             </td>
           </tr>
           {% endfor %}
@@ -373,6 +380,148 @@
     </form>
   </div>
 </div>
+
+<!-- ============================================== -->
+<!-- VIEW USER DETAILS MODAL (Django Admin Style) -->
+<div id="view-user-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/55 backdrop-blur-sm p-4">
+  <div class="w-full max-w-2xl rounded-sm border border-border bg-white p-6 shadow-xl text-left whitespace-normal animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
+    <div class="flex items-center justify-between border-b border-border pb-3 mb-4 shrink-0">
+      <h3 class="font-serif text-base text-ink font-semibold flex items-center gap-2">
+        <i data-lucide="eye" class="h-5 w-5 text-navy"></i> View User Account: <span id="view-header-username" class="text-navy font-mono"></span>
+      </h3>
+      <button type="button" onclick="closeViewModal()" class="text-ink-light hover:text-ink">
+        <i data-lucide="x" class="h-4 w-4"></i>
+      </button>
+    </div>
+
+    <!-- Django Admin Style Fieldsets -->
+    <div class="space-y-6 overflow-y-auto pr-2 flex-1 scrollbar-thin">
+      
+      <!-- Fieldset 1: Credentials -->
+      <div class="border border-border rounded-sm">
+        <div class="bg-slate-50 border-b border-border px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-ink font-semibold">
+          Credentials
+        </div>
+        <div class="divide-y divide-border">
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">Username</div>
+            <div class="w-full sm:w-2/3 text-ink font-mono px-4 py-2.5 flex items-center" id="view-username"></div>
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">Password</div>
+            <div class="w-full sm:w-2/3 px-4 py-2.5 flex flex-col justify-center gap-1.5">
+              <span class="text-ink font-mono break-all select-all bg-slate-50 px-2 py-1 rounded border border-border text-[10px]" id="view-password"></span>
+              <span class="text-[10px] text-ink-light italic">Raw passwords are not stored. Instead, a hash of the password is calculated and stored.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fieldset 2: Personal Info -->
+      <div class="border border-border rounded-sm">
+        <div class="bg-slate-50 border-b border-border px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-ink font-semibold">
+          Personal Info
+        </div>
+        <div class="divide-y divide-border">
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">First Name</div>
+            <div class="w-full sm:w-2/3 text-ink px-4 py-2.5 flex items-center" id="view-first-name"></div>
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">Last Name</div>
+            <div class="w-full sm:w-2/3 text-ink px-4 py-2.5 flex items-center" id="view-last-name"></div>
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">Email Address</div>
+            <div class="w-full sm:w-2/3 text-ink font-mono px-4 py-2.5 flex items-center" id="view-email"></div>
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">Contact Number</div>
+            <div class="w-full sm:w-2/3 text-ink px-4 py-2.5 flex items-center" id="view-contact"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fieldset 3: Barangay Profile -->
+      <div class="border border-border rounded-sm">
+        <div class="bg-slate-50 border-b border-border px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-ink font-semibold">
+          Barangay Profile
+        </div>
+        <div class="divide-y divide-border">
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">Role Designation</div>
+            <div class="w-full sm:w-2/3 text-ink px-4 py-2.5 flex items-center" id="view-role"></div>
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">Account Status</div>
+            <div class="w-full sm:w-2/3 text-ink px-4 py-2.5 flex items-center" id="view-status"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fieldset 4: Permissions -->
+      <div class="border border-border rounded-sm">
+        <div class="bg-slate-50 border-b border-border px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-ink font-semibold">
+          Permissions
+        </div>
+        <div class="divide-y divide-border">
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">Active</div>
+            <div class="w-full sm:w-2/3 flex items-start gap-2.5 px-4 py-2.5 flex-col justify-center">
+              <div class="flex items-center gap-2">
+                <span id="view-active-icon"></span>
+                <span class="text-ink font-semibold" id="view-active-val"></span>
+              </div>
+              <p class="text-[10px] text-ink-light leading-normal">Designates whether this user should be treated as active. Unselect this instead of deleting accounts.</p>
+            </div>
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">Staff status</div>
+            <div class="w-full sm:w-2/3 flex items-start gap-2.5 px-4 py-2.5 flex-col justify-center">
+              <div class="flex items-center gap-2">
+                <span id="view-staff-icon"></span>
+                <span class="text-ink font-semibold" id="view-staff-val"></span>
+              </div>
+              <p class="text-[10px] text-ink-light leading-normal">Designates whether the user can log into this admin site.</p>
+            </div>
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">Superuser status</div>
+            <div class="w-full sm:w-2/3 flex items-start gap-2.5 px-4 py-2.5 flex-col justify-center">
+              <div class="flex items-center gap-2">
+                <span id="view-superuser-icon"></span>
+                <span class="text-ink font-semibold" id="view-superuser-val"></span>
+              </div>
+              <p class="text-[10px] text-ink-light leading-normal">Designates that this user has all permissions without explicitly assigning them.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fieldset 5: Important Dates -->
+      <div class="border border-border rounded-sm">
+        <div class="bg-slate-50 border-b border-border px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-ink font-semibold">
+          Important Dates
+        </div>
+        <div class="divide-y divide-border">
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">Date Joined</div>
+            <div class="w-full sm:w-2/3 text-ink font-mono px-4 py-2.5 flex items-center" id="view-date-joined"></div>
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch text-xs">
+            <div class="w-full sm:w-1/3 font-semibold text-ink-muted bg-[#fafaf8] px-4 py-2.5 flex items-center border-r border-border">Last Login</div>
+            <div class="w-full sm:w-2/3 text-ink font-mono px-4 py-2.5 flex items-center" id="view-last-login"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="flex justify-end gap-2 pt-3 border-t border-border mt-5 shrink-0">
+      <button type="button" onclick="closeViewModal()" class="btn-primary py-1.5 px-4 text-xs">Close</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -412,6 +561,71 @@
 
   function closeEditModal() {
     const modal = document.getElementById('edit-user-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function openViewModal(username, firstName, lastName, email, contact, roleDisplay, status, isActive, isStaff, isSuperuser, createdDate, lastLogin, passwordHash) {
+    const modal = document.getElementById('view-user-modal');
+    
+    // Set header
+    document.getElementById('view-header-username').innerText = username;
+    
+    // Populate simple fields
+    document.getElementById('view-username').innerText = username;
+    document.getElementById('view-password').innerText = passwordHash;
+    document.getElementById('view-first-name').innerText = firstName || '—';
+    document.getElementById('view-last-name').innerText = lastName || '—';
+    document.getElementById('view-email').innerText = email || '—';
+    document.getElementById('view-contact').innerText = contact || '—';
+    document.getElementById('view-role').innerText = roleDisplay;
+    document.getElementById('view-status').innerText = status === 'active' ? 'Active' : 'Inactive';
+    document.getElementById('view-date-joined').innerText = createdDate;
+    document.getElementById('view-last-login').innerText = lastLogin;
+    
+    // Django admin style check/cross SVGs
+    const checkIcon = `<svg class="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+    const crossIcon = `<svg class="h-4 w-4 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+    
+    // Active Status
+    const activeIcon = document.getElementById('view-active-icon');
+    const activeVal = document.getElementById('view-active-val');
+    if (isActive === 'True') {
+      activeIcon.innerHTML = checkIcon;
+      activeVal.innerText = 'Yes';
+    } else {
+      activeIcon.innerHTML = crossIcon;
+      activeVal.innerText = 'No';
+    }
+    
+    // Staff Status
+    const staffIcon = document.getElementById('view-staff-icon');
+    const staffVal = document.getElementById('view-staff-val');
+    if (isStaff === 'True') {
+      staffIcon.innerHTML = checkIcon;
+      staffVal.innerText = 'Yes';
+    } else {
+      staffIcon.innerHTML = crossIcon;
+      staffVal.innerText = 'No';
+    }
+    
+    // Superuser Status
+    const superuserIcon = document.getElementById('view-superuser-icon');
+    const superuserVal = document.getElementById('view-superuser-val');
+    if (isSuperuser === 'True') {
+      superuserIcon.innerHTML = checkIcon;
+      superuserVal.innerText = 'Yes';
+    } else {
+      superuserIcon.innerHTML = crossIcon;
+      superuserVal.innerText = 'No';
+    }
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeViewModal() {
+    const modal = document.getElementById('view-user-modal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
   }
