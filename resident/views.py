@@ -36,6 +36,12 @@ def verify_recaptcha(request):
     return False
 
 
+def landing_page(request):
+    """Landing page view with Three.js."""
+    if request.user.is_authenticated:
+        return _redirect_by_role(request.user)
+    return render(request, 'resident/landing.html')
+
 def login_view(request):
     """Handle login and registration. Redirect based on role after login."""
     if request.user.is_authenticated:

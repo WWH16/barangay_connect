@@ -1,0 +1,341 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barangay Connect</title>
+  
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f4f6f8',
+              100: '#e4e9f0',
+              500: '#3b82f6',
+              600: '#2563eb',
+              900: '#0f172a',
+              950: '#020617',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: #020617;
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none; /* Let clicks pass through to buttons */
+    }
+    .content-wrapper {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      padding: 2rem;
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+    .glass-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(59, 130, 246, 0.5);
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      font-weight: 500;
+      border-radius: 9999px;
+      transition: all 0.3s ease;
+      gap: 0.5rem;
+    }
+    .btn-primary {
+      background-color: #3b82f6;
+      color: white;
+      box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+    }
+    .btn-primary:hover {
+      background-color: #2563eb;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+    .btn-secondary {
+      background-color: transparent;
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .btn-secondary:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="canvas-container"></div>
+  
+  <div class="content-wrapper">
+    <!-- Navigation -->
+    <nav class="flex items-center justify-between p-6 max-w-7xl mx-auto w-full">
+      <div class="flex items-center gap-2">
+        <div class="w-10 h-10 rounded-full bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/30">
+          <i data-lucide="building-2" class="text-white w-5 h-5"></i>
+        </div>
+        <span class="font-semibold text-xl tracking-tight">Barangay Connect</span>
+      </div>
+      <div class="flex gap-4">
+        <a href="{% url 'login' %}" class="btn btn-secondary text-sm">Sign In</a>
+      </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <main class="hero max-w-5xl mx-auto w-full">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm mb-8">
+        <span class="flex h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
+        <span class="text-sm font-medium text-slate-300">Next-gen community management</span>
+      </div>
+      
+      <h1 class="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-tight">
+        Connect with your <br/>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">local community</span>
+      </h1>
+      
+      <p class="text-lg md:text-xl text-slate-400 mb-12 max-w-2xl font-light">
+        A centralized platform bridging the gap between residents and barangay officials. Report incidents, track requests, and stay informed.
+      </p>
+      
+      <div class="flex flex-col sm:flex-row gap-4 mb-24">
+        <a href="{% url 'login' %}?action=register" class="btn btn-primary text-lg px-8 py-4">
+          Get Started <i data-lucide="arrow-right" class="w-5 h-5"></i>
+        </a>
+      </div>
+      
+      <!-- Features -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full text-left">
+        <div class="glass-card">
+          <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center mb-6">
+            <i data-lucide="shield-alert" class="text-blue-400 w-6 h-6"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Report Issues</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Instantly report local incidents or file complaints with geo-tagging and photo evidence.</p>
+        </div>
+        <div class="glass-card">
+          <div class="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center mb-6">
+            <i data-lucide="clock" class="text-indigo-400 w-6 h-6"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Track Status</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Stay updated with real-time notifications on the progress of your submitted reports.</p>
+        </div>
+        <div class="glass-card">
+          <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center mb-6">
+            <i data-lucide="bar-chart-2" class="text-purple-400 w-6 h-6"></i>
+          </div>
+          <h3 class="text-xl font-semibold mb-2">Data Insights</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Officials can leverage analytics to make data-driven decisions for community improvement.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    lucide.createIcons();
+
+    // 3D Abstract City Map Context
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x020617, 0.002);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+    // Position camera to look down at an angle (isometric feel)
+    camera.position.set(0, 100, 200);
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // Group for the entire map so we can rotate it
+    const mapGroup = new THREE.Group();
+    scene.add(mapGroup);
+
+    // 1. Grid/Base Plane
+    const gridHelper = new THREE.GridHelper(400, 40, 0x1e293b, 0x0f172a);
+    gridHelper.position.y = -0.1;
+    mapGroup.add(gridHelper);
+
+    // 2. Abstract Buildings (City Context)
+    const buildingGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const buildingMaterial = new THREE.MeshPhongMaterial({
+      color: 0x0f172a,
+      transparent: true,
+      opacity: 0.8,
+      flatShading: true
+    });
+
+    const citySize = 300;
+    const numBuildings = 200;
+    
+    // Create an instanced mesh for performance
+    const instancedBuildings = new THREE.InstancedMesh(buildingGeometry, buildingMaterial, numBuildings);
+    const dummy = new THREE.Object3D();
+
+    for (let i = 0; i < numBuildings; i++) {
+      const x = (Math.random() - 0.5) * citySize;
+      const z = (Math.random() - 0.5) * citySize;
+      const width = 2 + Math.random() * 6;
+      const depth = 2 + Math.random() * 6;
+      const height = 5 + Math.pow(Math.random(), 3) * 40; // some tall, mostly short
+
+      dummy.position.set(x, height / 2, z);
+      dummy.scale.set(width, height, depth);
+      dummy.updateMatrix();
+      instancedBuildings.setMatrixAt(i, dummy.matrix);
+    }
+    mapGroup.add(instancedBuildings);
+
+    // 3. Incident Markers (Map Pins / Glowing Data Points)
+    const numMarkers = 30;
+    const markers = [];
+    const markerGeometry = new THREE.CylinderGeometry(0, 1.5, 4, 4);
+    markerGeometry.translate(0, 2, 0); // origin at bottom
+
+    for (let i = 0; i < numMarkers; i++) {
+      const isComplaint = Math.random() > 0.5;
+      const mColor = isComplaint ? 0xef4444 : 0x3b82f6; // Red for complaint, Blue for incident
+      
+      const material = new THREE.MeshBasicMaterial({
+        color: mColor,
+        transparent: true,
+        opacity: 0.8,
+        wireframe: true
+      });
+
+      const marker = new THREE.Mesh(markerGeometry, material);
+      const x = (Math.random() - 0.5) * citySize * 0.8;
+      const z = (Math.random() - 0.5) * citySize * 0.8;
+      
+      marker.position.set(x, 0, z);
+      
+      // Store initial data for animation
+      marker.userData = {
+        baseY: 0,
+        speed: 0.02 + Math.random() * 0.03,
+        offset: Math.random() * Math.PI * 2,
+        pulseHeight: 2 + Math.random() * 5
+      };
+
+      // Add a line shooting up to represent data transmission
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, 20 + Math.random() * 30, 0)
+      ]);
+      const lineMat = new THREE.LineBasicMaterial({
+        color: mColor,
+        transparent: true,
+        opacity: 0.3
+      });
+      const line = new THREE.Line(lineGeo, lineMat);
+      marker.add(line);
+
+      markers.push(marker);
+      mapGroup.add(marker);
+    }
+
+    // 4. Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0x3b82f6, 2);
+    dirLight.position.set(100, 200, 50);
+    scene.add(dirLight);
+
+    const pinkLight = new THREE.PointLight(0xec4899, 3, 300);
+    pinkLight.position.set(-100, 50, -100);
+    scene.add(pinkLight);
+
+    // Mouse interaction for camera tilt
+    let mouseX = 0;
+    let mouseY = 0;
+    document.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+      mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const time = clock.getElapsedTime();
+
+      // Slowly rotate the entire city
+      mapGroup.rotation.y = time * 0.05;
+
+      // Animate markers (bouncing map pins)
+      markers.forEach(marker => {
+        const ud = marker.userData;
+        marker.position.y = ud.baseY + Math.sin(time * 3 + ud.offset) * ud.pulseHeight;
+        marker.rotation.y += ud.speed;
+      });
+
+      // Subtle camera pan based on mouse
+      camera.position.x += (mouseX * 50 - camera.position.x) * 0.05;
+      camera.position.y += ((100 + mouseY * 20) - camera.position.y) * 0.05;
+      camera.lookAt(0, 0, 0);
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
