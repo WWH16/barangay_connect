@@ -4,73 +4,91 @@ Barangay Connect is a centralized report and incident management system designed
 
 ---
 
+## 📸 Screenshots & Previews
+
+### Public Pages
+<div align="center">
+  <img src="assets/landing.png" width="800" alt="Landing Page">
+  <br>
+  <img src="assets/login.png" width="400" alt="Login Page">
+  <img src="assets/signin.png" width="400" alt="Sign In Page">
+</div>
+
+### Official Dashboard
+<div align="center">
+  <img src="assets/case_monitoringtab.png" width="800" alt="Case Monitoring">
+  <br>
+  <img src="assets/reports_1.png" width="800" alt="Reports & Analytics">
+  <br>
+  <img src="assets/report_stats.png" width="800" alt="Report Statistics">
+  <br>
+  <img src="assets/heatmap.png" width="800" alt="Heatmap Distribution">
+  <br>
+  <img src="assets/activity_log.png" width="800" alt="Activity Log">
+  <br>
+  <img src="assets/user_management.png" width="800" alt="User Management">
+  <br>
+  <img src="assets/backup_recovery.png" width="800" alt="Backup and Recovery">
+</div>
+
+---
+
+## ✨ Features
+
+| Feature Category | Description | Access Level |
+| :--- | :--- | :--- |
+| **Interactive 3D Landing Page** | Premium, context-aware 3D city map with bouncing markers indicating active community concerns. | Public |
+| **Case Monitoring System** | Centralized dashboard for staff and officials to track, assign, and update report statuses (Pending, In Progress, Resolved). | Staff, Official |
+| **Geographic Heatmap** | Interactive Leaflet map displaying spatial density of incidents and complaints across the barangay. | Official |
+| **Analytics & Data Insights** | Comprehensive visual charts (Chart.js) tracking case trends, resolution rates, and category distribution over time. | Official |
+| **Resident Dashboard** | A personalized dashboard for residents to view their submitted reports and track status updates. | Resident |
+| **System Activity Log** | Detailed audit trail recording user logins, logouts, report updates, and administrative changes. | Official |
+| **User Management** | Registry for viewing and managing accounts across all role levels (Residents, Staff, Officials). | Official |
+| **Database Backup & Recovery** | Built-in functionality for administrators to generate, download, and restore local SQLite backups. | Official |
+
+---
+
+## 🔒 Security Measures
+
+| Security Feature | Implementation Details |
+| :--- | :--- |
+| **Role-Based Access Control (RBAC)** | Strict decorators and properties (`is_resident`, `is_staff`, `is_official`) to restrict view and API access based on user role. |
+| **Authentication & Sessions** | Secure Django session-based authentication managing user logins and logouts. |
+| **Form Protection (CSRF)** | Cross-Site Request Forgery (CSRF) tokens implemented on all state-changing forms and requests. |
+| **Data Auditing** | `ActivityLog` tracking system ensures accountability for data modifications and user actions. |
+| **Safe File Operations** | Built-in database backup system with strict directory validation and file format checking (.sqlite3). |
+| **Content Security** | Proper template escaping to prevent Cross-Site Scripting (XSS) vulnerabilities. |
+
+---
+
 ## 👥 Users & Stakeholders
 
 Based on the system design requirements, the platform supports three primary user types, as well as indirect stakeholders:
 
 ### User Type 1: Resident
-* **Role and Responsibilities:**
-  * Submit complaints and incident reports
-  * Track complaint status
-  * Provide additional details and evidence when needed
-* **Needs and Expectations:**
-  * Easy and intuitive reporting process
-  * Fast response time from the barangay
-  * Real-time case updates
-* **Information Flow:**
-  * **Provided:** Personal information, complaint/incident details, and file evidence (photos/documents).
-  * **Received:** Step-by-step case status changes, notifications, and resolution updates.
-* **Access Privileges:** Submit new reports, view personal reports dashboard, and receive updates.
-* **Possible Concerns:** Privacy of personal details, slow or delayed resolutions.
+* **Role**: Submit complaints and incident reports; track complaint status.
+* **Needs**: Easy reporting process, fast response times, real-time updates.
+* **Access Privileges**: Submit new reports, view personal dashboard.
 
 ### User Type 2: Barangay Staff
-* **Role and Responsibilities:**
-  * Review submitted complaints
-  * Verify information accuracy
-  * Update case status (Pending ➔ In Progress ➔ Resolved)
-* **Needs and Expectations:**
-  * Organized records and easy filtering
-  * Efficient, clear workflow pipelines
-* **Information Flow:**
-  * **Provided:** Investigation updates, internal case remarks.
-  * **Received:** Real-time notifications of new resident complaints, resident profile information.
-* **Access Privileges:** Manage complaints registry, update case status, update progress records.
-* **Possible Concerns:** High workload volume, data accuracy validation.
+* **Role**: Review complaints, verify information, update case status.
+* **Needs**: Organized records, efficient workflows.
+* **Access Privileges**: Manage complaints registry, update progress records.
 
 ### User Type 3: Barangay Administrator/Officials
-* **Role and Responsibilities:**
-  * Oversee entire barangay operations
-  * Assign cases to specific staff members
-  * Make operational decisions based on aggregated analytics
-* **Needs and Expectations:**
-  * Accurate, clear reports
-  * Reliable system monitoring and analytics tools
-* **Information Flow:**
-  * **Provided:** Staff case assignments, official resolutions, decisions.
-  * **Received:** Interactive system analytics, performance reports, monthly volumes.
-* **Access Privileges:** Full system access, staff assignment capabilities, reports and analytics dashboard.
-* **Possible Concerns:** Information security, system uptime, and reliability.
-
-### 🌐 Indirect Stakeholders
-* **Municipal Government:** For city-wide data aggregation and support.
-* **Community Organizations:** Collaborating on resolved neighborhood concerns.
-* **IT Support Personnel:** Maintaining system reliability and security.
-* **Emergency Response Teams:** For critical incidents requiring immediate rescue/police dispatch.
+* **Role**: Oversee operations, assign cases, make data-driven decisions.
+* **Needs**: Accurate reports, reliable analytics tools.
+* **Access Privileges**: Full system access, staff assignment, analytics dashboard, system backup.
 
 ---
 
-## 🛠️ Codebase Mapping & Implementation
-
-The stakeholders map directly to the implementation details of the application:
-1. **User Roles:** Handled by [Profile.role](file:///S:/PROJECTS/barangay_connect/resident/models.py#L8-L12) choice field with roles `resident`, `staff`, and `official` (Administrator).
-2. **Access Control:** Verified using custom decorators and helper properties like [is_resident](file:///S:/PROJECTS/barangay_connect/resident/models.py#L20-L22), [is_staff](file:///S:/PROJECTS/barangay_connect/resident/models.py#L29-L31), and [is_official](file:///S:/PROJECTS/barangay_connect/resident/models.py#L24-L26).
-3. **Reports:** Managed through the [Report](file:///S:/PROJECTS/barangay_connect/resident/models.py#L37-L58) model with `report_type` (`complaint` or `incident`) and `status` (`Pending`, `In Progress`, `Resolved`).
-4. **Analytics:** Gathered in [views.py](file:///S:/PROJECTS/barangay_connect/barangay_app/views.py#L93) and visually displayed to officials using Chart.js on the [official_reports.html](file:///S:/PROJECTS/barangay_connect/barangay_app/templates/barangay_app/official_reports.html) page.
-
----
-
-## 💻 Tech Stack
+## 🛠️ Tech Stack & Codebase Mapping
 * **Framework:** Django (Python)
 * **Database:** SQLite
-* **Frontend:** Tailwind CSS, HTML5, Vanilla JavaScript, Lucide Icons
-* **Charts & Analytics:** Chart.js
+* **Frontend:** Tailwind CSS, HTML5, Vanilla JavaScript, Lucide Icons, Three.js
+* **Mapping & Analytics:** Leaflet.js, Chart.js
+
+The stakeholders map directly to the application:
+1. **User Roles:** Handled by `Profile.role` (`resident`, `staff`, `official`).
+2. **Reports:** Managed through the `Report` model (`complaint`, `incident`).
+3. **Analytics:** Gathered in `views.py` and displayed via Chart.js on `official_reports.html`.
